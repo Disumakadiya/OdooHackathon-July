@@ -27,6 +27,11 @@ import AssetflowNotifications from "../pages/Notifications/assetflow_notificatio
 export default function AppRoutes() {
   return (
     <Routes>
+      <Route path="/" element={<AssetflowAdminDashboard />} />
+      <Route path="/dashboard" element={<AssetflowAdminDashboard />} />
+      <Route path="/audit" element={<AssetflowAuditDashboard />} />
+      <Route path="/assets" element={<AssetflowAssetVerification />} />
+      <Route path="/reports" element={<AssetflowAdminDashboard />} />
       <Route path="/login" element={<AssetflowEnterpriseAuthentication />} />
       <Route element={<ProtectedRoute />}>
         <Route path="/" element={<AssetflowAdminDashboard />} />

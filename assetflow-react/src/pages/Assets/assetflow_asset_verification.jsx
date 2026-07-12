@@ -1,250 +1,419 @@
-import { useEffect } from 'react';
-import Sidebar from '../../components/Sidebar';
+import { useEffect, useMemo, useState } from "react";
+import { assetVerificationData } from "../../assets/assetVerificationData";
+import Button from "../../components/Button";
+import Card from "../../components/Card";
+import Modal from "../../components/Modal";
+import SearchBar from "../../components/SearchBar";
+import Sidebar from "../../components/Sidebar";
+import StatusBadge from "../../components/StatusBadge";
+import Table from "../../components/Table";
+import AssetActionMenu from "../../components/AssetActionMenu";
+import AssetDetailDrawer from "../../components/AssetDetailDrawer";
+
+const categoryOptions = ["All", "IT Equipment", "Furniture", "Vehicles", "Industrial Tools", "Office Equipment"];
+const statusOptions = ["All", "Available", "Allocated", "Reserved", "Under Maintenance", "Lost", "Retired", "Disposed"];
+const departmentOptions = ["All", "IT", "HR", "Finance", "Operations"];
+const locationOptions = ["All", "Head Office", "Warehouse A", "Warehouse B", "Branch Office"];
+
+const initialForm = {
+  assetTag: "",
+  name: "",
+  serialNumber: "",
+  qrCode: "",
+  category: "IT Equipment",
+  status: "Available",
+  department: "IT",
+  location: "Head Office",
+  assignedEmployee: "",
+  lastUpdated: "Jul 12, 2026",
+  condition: "Good",
+  description: "",
+};
 
 export default function assetflow_asset_verification() {
+  const [search, setSearch] = useState("");
+  const [filters, setFilters] = useState({ category: "All", status: "All", department: "All", location: "All" });
+  const [assets, setAssets] = useState(assetVerificationData);
+  const [createOpen, setCreateOpen] = useState(false);
+  const [viewOpen, setViewOpen] = useState(false);
+  const [editOpen, setEditOpen] = useState(false);
+  const [deleteOpen, setDeleteOpen] = useState(false);
+  const [selectedAsset, setSelectedAsset] = useState(null);
+  const [form, setForm] = useState(initialForm);
+
   useEffect(() => {
-    document.title = 'AssetFlow | Asset Verification';
-    const scannerLine = document.querySelector('.scanner-line');
-    if (scannerLine) {
-      const interval = setInterval(() => {
-        scannerLine.style.boxShadow = '0 0 30px rgba(74,102,62,1)';
-        setTimeout(() => { scannerLine.style.boxShadow = '0 0 15px rgba(74,102,62,0.8)'; }, 200);
-      }, 3500);
-      return () => clearInterval(interval);
-    }
+    document.title = "AssetFlow | Asset Verification";
   }, []);
 
-  const handleVerify = (e) => {
-    const btn = e.currentTarget;
-    if (btn.innerText.includes('Verify')) {
-      btn.classList.replace('bg-primary', 'bg-secondary');
-      btn.innerHTML = '<span class="material-symbols-outlined text-sm">check_circle</span><span>Verified</span>';
-      btn.disabled = true;
-    }
+  const filteredAssets = useMemo(() => {
+    const keyword = search.trim().toLowerCase();
+    return assets.filter((asset) => {
+      const matchesSearch =
+        !keyword ||
+        [asset.assetTag, asset.name, asset.serialNumber, asset.qrCode].join(" ").toLowerCase().includes(keyword);
+      const matchesCategory = filters.category === "All" || asset.category === filters.category;
+      const matchesStatus = filters.status === "All" || asset.status === filters.status;
+      const matchesDepartment = filters.department === "All" || asset.department === filters.department;
+      const matchesLocation = filters.location === "All" || asset.location === filters.location;
+      return matchesSearch && matchesCategory && matchesStatus && matchesDepartment && matchesLocation;
+    });
+  }, [assets, filters, search]);
+
+  const summary = useMemo(
+    () => ({
+      totalCategories: new Set(assets.map((asset) => asset.category)).size,
+      totalAssets: assets.length,
+      active: assets.filter((asset) => ["Available", "Allocated", "Reserved"].includes(asset.status)).length,
+      inactive: assets.filter((asset) => ["Under Maintenance", "Lost", "Retired", "Disposed"].includes(asset.status)).length,
+    }),
+    [assets],
+  );
+
+  const openCreateModal = () => {
+    setSelectedAsset(null);
+    setForm(initialForm);
+    setCreateOpen(true);
   };
 
+  const openViewModal = (asset) => {
+    setSelectedAsset(asset);
+    setViewOpen(true);
+  };
+
+  const openEditModal = (asset) => {
+    setSelectedAsset(asset);
+    setForm({ ...asset });
+    setEditOpen(true);
+  };
+
+  const openDeleteModal = (asset) => {
+    setSelectedAsset(asset);
+    setDeleteOpen(true);
+  };
+
+  const handleSaveAsset = () => {
+    const nextAsset = {
+      ...form,
+      id: selectedAsset?.id ?? `ASSET-${Date.now()}`,
+      allocationHistory: selectedAsset?.allocationHistory ?? [
+        { id: 1, action: "Registered in system", date: "Jul 12, 2026", details: "Dummy registration created from the verification screen." },
+      ],
+      maintenanceHistory: selectedAsset?.maintenanceHistory ?? [
+        { id: 1, action: "Initial setup", date: "Jul 12, 2026", status: "Completed", details: "No backend integration. Dummy data only." },
+      ],
+      stats: selectedAsset?.stats ?? { usageDays: 0, moves: 0, maintenance: 0, openIssues: 0 },
+    };
+
+    setAssets((current) => {
+      const existingIndex = current.findIndex((asset) => asset.id === nextAsset.id);
+      if (existingIndex >= 0) {
+        const updated = [...current];
+        updated[existingIndex] = nextAsset;
+        return updated;
+      }
+      return [nextAsset, ...current];
+    });
+
+    setCreateOpen(false);
+    setEditOpen(false);
+    setSelectedAsset(null);
+    setForm(initialForm);
+  };
+
+  const handleDeleteAsset = () => {
+    setAssets((current) => current.filter((asset) => asset.id !== selectedAsset?.id));
+    setDeleteOpen(false);
+    setSelectedAsset(null);
+  };
+
+  const updateSelectedAsset = (status, actionLabel) => {
+    if (!selectedAsset) {
+      return;
+    }
+
+    const nextHistory = {
+      id: Date.now(),
+      action: actionLabel,
+      date: "Jul 12, 2026",
+      details: `Dummy ${actionLabel.toLowerCase()} recorded from Asset Verification.`,
+    };
+
+    setAssets((current) =>
+      current.map((asset) => {
+        if (asset.id !== selectedAsset.id) {
+          return asset;
+        }
+        return {
+          ...asset,
+          status,
+          lastUpdated: "Jul 12, 2026",
+          allocationHistory: [nextHistory, ...asset.allocationHistory],
+        };
+      }),
+    );
+  };
+
+  const handleTransferRequest = () => {
+    updateSelectedAsset("Reserved", "Transfer Request Raised");
+  };
+
+  const columns = [
+    {
+      key: "assetTag",
+      label: "Asset Tag",
+      render: (asset) => (
+        <button className="font-bold text-primary hover:underline" onClick={() => openViewModal(asset)} type="button">
+          {asset.assetTag}
+        </button>
+      ),
+    },
+    { key: "name", label: "Name" },
+    { key: "category", label: "Category" },
+    { key: "status", label: "Status", render: (asset) => <StatusBadge status={asset.status} /> },
+    { key: "location", label: "Location" },
+    { key: "assignedEmployee", label: "Assigned Employee" },
+    { key: "lastUpdated", label: "Last Updated" },
+    {
+      key: "actions",
+      label: "Actions",
+      render: (asset) => (
+        <AssetActionMenu
+          onView={() => openViewModal(asset)}
+          onEdit={() => openEditModal(asset)}
+          onDelete={() => openDeleteModal(asset)}
+        />
+      ),
+    },
+  ];
+
+  const modalField = "w-full rounded-lg border border-outline-variant bg-surface-container-low px-4 py-3 font-label-md text-label-md outline-none transition-colors focus:border-primary";
+
   return (
-    <div className="flex min-h-screen overflow-hidden">
+    <div className="font-body-md text-body-md">
       <Sidebar />
 
-      <main className="flex-1 md:ml-64 flex flex-col h-screen bg-background overflow-hidden">
-        {/* TopNavBar */}
-        <header className="sticky top-0 z-40 bg-surface border-b border-outline-variant flex justify-between items-center w-full px-lg py-sm h-16 shrink-0">
-          <div className="flex items-center space-x-md">
-            <button className="md:hidden p-sm text-primary"><span className="material-symbols-outlined">menu</span></button>
-            <div className="flex flex-col">
-              <h2 className="font-headline-md text-headline-md font-bold text-primary">Asset Verification</h2>
-              <p className="hidden sm:block font-label-sm text-label-sm text-on-surface-variant">Session: HQ-West-Section-A</p>
+      <main className="min-h-screen md:ml-64">
+        <header className="sticky top-0 z-40 border-b border-outline-variant bg-surface/90 px-lg py-sm backdrop-blur">
+          <div className="flex flex-col gap-sm lg:flex-row lg:items-center lg:justify-between">
+            <div>
+              <h2 className="font-headline-lg text-headline-lg text-primary">Asset Verification</h2>
+              <p className="mt-xs font-label-md text-label-md text-on-surface-variant">Search, verify, and manage enterprise assets.</p>
             </div>
-          </div>
-          <div className="flex items-center space-x-md">
-            <div className="hidden lg:flex items-center bg-surface-container rounded-full px-md py-sm w-64">
-              <span className="material-symbols-outlined text-outline text-sm">search</span>
-              <input className="bg-transparent border-none focus:ring-0 text-label-md font-body-md w-full ml-sm" placeholder="Search asset ID..." type="text" />
-            </div>
-            <div className="flex space-x-sm">
-              <button className="p-sm rounded-full hover:bg-surface-container-low text-on-surface-variant"><span className="material-symbols-outlined">notifications</span></button>
-              <button className="p-sm rounded-full hover:bg-surface-container-low text-on-surface-variant"><span className="material-symbols-outlined">help</span></button>
+            <div className="flex items-center gap-sm">
+              <button className="inline-flex items-center justify-center rounded-lg border border-outline-variant bg-surface-container px-md py-sm font-label-md text-label-md text-primary transition-colors hover:bg-surface-container-high" type="button">
+                <span className="material-symbols-outlined mr-sm text-[18px]">qr_code_scanner</span>
+                Scan Asset
+              </button>
+              <Button onClick={openCreateModal}>
+                <span className="material-symbols-outlined mr-sm text-[18px]">add</span>
+                Register Asset
+              </Button>
             </div>
           </div>
         </header>
 
-        <div className="flex-1 overflow-y-auto px-md md:px-xl py-lg space-y-xl max-w-max-width mx-auto w-full">
-          <section className="grid grid-cols-1 lg:grid-cols-12 gap-lg items-start">
-            {/* Stats */}
-            <div className="lg:col-span-4 space-y-lg order-2 lg:order-1">
-              <div className="bg-surface-container-lowest p-lg rounded-xl soft-elevation border border-outline-variant">
-                <h3 className="font-headline-md text-headline-md text-primary mb-md">Session Progress</h3>
-                <div className="space-y-md">
-                  <div>
-                    <div className="flex justify-between mb-xs">
-                      <span className="font-label-md text-label-md text-on-surface-variant">Verified</span>
-                      <span className="font-label-md text-label-md text-primary font-bold">42 / 120</span>
-                    </div>
-                    <div className="w-full bg-surface-container-highest h-2 rounded-full overflow-hidden">
-                      <div className="bg-secondary h-full transition-all duration-500" style={{ width: '35%' }}></div>
-                    </div>
-                  </div>
-                  <div className="grid grid-cols-2 gap-sm pt-sm">
-                    <div className="p-sm bg-surface rounded-lg border border-outline-variant">
-                      <p className="font-label-sm text-label-sm text-on-surface-variant">Pending</p>
-                      <p className="font-headline-md text-headline-md text-primary">78</p>
-                    </div>
-                    <div className="p-sm bg-surface rounded-lg border border-outline-variant">
-                      <p className="font-label-sm text-label-sm text-on-surface-variant">Flagged</p>
-                      <p className="font-headline-md text-headline-md text-error">3</p>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              <div className="bg-surface-container-lowest p-lg rounded-xl soft-elevation border border-outline-variant">
-                <h3 className="font-label-md text-label-md font-bold text-primary uppercase tracking-wider mb-md">Verification History</h3>
-                <div className="space-y-md">
-                  {[
-                    { name: 'MacBook Pro M2', id: 'ASSET-8821', time: '2 mins ago' },
-                    { name: 'Aeron Office Chair', id: 'ASSET-4451', time: '8 mins ago' },
-                  ].map((item, i) => (
-                    <div key={i} className="flex items-center space-x-md">
-                      <div className="w-10 h-10 rounded bg-secondary-container flex items-center justify-center">
-                        <span className="material-symbols-outlined text-secondary">check_circle</span>
-                      </div>
-                      <div className="flex-1 border-b border-outline-variant pb-sm">
-                        <p className="font-label-md text-label-md font-bold">{item.name}</p>
-                        <p className="font-label-sm text-label-sm text-on-surface-variant">ID: {item.id} • {item.time}</p>
-                      </div>
-                    </div>
-                  ))}
-                  <button className="w-full py-sm text-primary font-label-md text-label-md hover:underline">View All Session Logs</button>
-                </div>
-              </div>
-            </div>
-
-            {/* Scanner Window */}
-            <div className="lg:col-span-8 order-1 lg:order-2">
-              <div className="relative bg-black rounded-xl overflow-hidden aspect-video soft-elevation group">
-                <div className="w-full h-full bg-cover bg-center opacity-60" style={{ backgroundImage: "url('https://lh3.googleusercontent.com/aida-public/AB6AXuCW-HvcRDrCfDEKLPflJEN9SvNRa-HGD-1IGxLWPOgnS9tlr6KEtshErP3y77dsdL-7pGpYwshdfC-dAEAQhd6fdhvUHRUbUxyi6ihiEmP_qNgs_EtghXBNS4h9PQOR6fkUm1BLWZqkALjgiwYgP0VQW60Z8pAYiQjEryaggXRz8Z_fa5OXntuOJWXVfRMfKC2jsQHWbH-BUF6vHhMidpiN22REQX8LHzbgKJpiSfRQ1LKJepbcVgW58Q')" }}></div>
-                <div className="absolute inset-0 flex items-center justify-center">
-                  <div className="relative w-64 h-64 md:w-80 md:h-80 border-2 border-white/50 rounded-2xl flex items-center justify-center">
-                    <div className="absolute top-0 left-0 w-8 h-8 border-t-4 border-l-4 border-white rounded-tl-lg"></div>
-                    <div className="absolute top-0 right-0 w-8 h-8 border-t-4 border-r-4 border-white rounded-tr-lg"></div>
-                    <div className="absolute bottom-0 left-0 w-8 h-8 border-b-4 border-l-4 border-white rounded-bl-lg"></div>
-                    <div className="absolute bottom-0 right-0 w-8 h-8 border-b-4 border-r-4 border-white rounded-br-lg"></div>
-                    <div className="w-full h-[2px] bg-secondary shadow-[0_0_15px_rgba(74,102,62,0.8)] absolute top-0 scanner-line"></div>
-                    <div className="text-center text-white space-y-md">
-                      <span className="material-symbols-outlined text-4xl" style={{ fontVariationSettings: "'wght' 200" }}>qr_code_scanner</span>
-                      <p className="font-label-md text-label-md">Align Code Within Frame</p>
-                    </div>
-                  </div>
-                </div>
-                <div className="absolute bottom-0 inset-x-0 p-lg bg-gradient-to-t from-black/80 to-transparent flex justify-between items-end">
-                  <div className="space-y-xs">
-                    <span className="bg-secondary text-on-secondary px-sm py-1 rounded text-[10px] font-bold uppercase tracking-widest">Live Mode</span>
-                    <p className="text-white font-headline-md text-headline-md">Scanning...</p>
-                  </div>
-                  <div className="flex space-x-md">
-                    <button className="w-12 h-12 bg-white/20 hover:bg-white/30 backdrop-blur-md rounded-full flex items-center justify-center text-white transition-all">
-                      <span className="material-symbols-outlined">flash_on</span>
-                    </button>
-                    <button className="w-12 h-12 bg-white/20 hover:bg-white/30 backdrop-blur-md rounded-full flex items-center justify-center text-white transition-all">
-                      <span className="material-symbols-outlined">cameraswitch</span>
-                    </button>
-                  </div>
-                </div>
-              </div>
-            </div>
+        <div className="mx-auto max-w-max-width space-y-xl p-lg pb-2xl">
+          <section className="grid grid-cols-1 gap-md sm:grid-cols-2 xl:grid-cols-4">
+            <Card><p className="text-label-sm text-on-surface-variant">Total Categories</p><p className="mt-2 text-3xl font-bold text-primary">{summary.totalCategories}</p></Card>
+            <Card><p className="text-label-sm text-on-surface-variant">Total Assets</p><p className="mt-2 text-3xl font-bold text-primary">{summary.totalAssets}</p></Card>
+            <Card><p className="text-label-sm text-on-surface-variant">Active</p><p className="mt-2 text-3xl font-bold text-secondary">{summary.active}</p></Card>
+            <Card><p className="text-label-sm text-on-surface-variant">Inactive</p><p className="mt-2 text-3xl font-bold text-error">{summary.inactive}</p></Card>
           </section>
 
-          {/* Asset List */}
-          <section className="space-y-lg pb-xl">
-            <div className="flex justify-between items-center">
-              <h3 className="font-headline-md text-headline-md text-primary">Pending Assets in Section A</h3>
-              <div className="flex items-center space-x-sm">
-                <button className="flex items-center space-x-xs px-md py-sm bg-surface-container rounded-lg font-label-md text-label-md hover:bg-surface-container-high">
-                  <span className="material-symbols-outlined text-sm">filter_list</span><span>Filter</span>
-                </button>
-                <button className="flex items-center space-x-xs px-md py-sm bg-surface-container rounded-lg font-label-md text-label-md hover:bg-surface-container-high">
-                  <span className="material-symbols-outlined text-sm">sort</span><span>Sort</span>
-                </button>
+          <section>
+            <Card title="Asset Registry" subtitle="Search by asset tag, name, serial number, or QR code">
+              <SearchBar placeholder="Search assets" value={search} onChange={(event) => setSearch(event.target.value)} />
+              <div className="mt-4 grid grid-cols-2 gap-3 lg:grid-cols-4">
+                {[
+                  ["category", categoryOptions],
+                  ["status", statusOptions],
+                  ["department", departmentOptions],
+                  ["location", locationOptions],
+                ].map(([key, options]) => (
+                  <select
+                    key={key}
+                    className="rounded-lg border border-outline-variant bg-surface-container-low px-3 py-2 font-label-md text-label-md text-on-surface outline-none transition-colors focus:border-primary"
+                    value={filters[key]}
+                    onChange={(event) => setFilters((current) => ({ ...current, [key]: event.target.value }))}
+                  >
+                    {options.map((option) => (
+                      <option key={option} value={option}>
+                        {option}
+                      </option>
+                    ))}
+                  </select>
+                ))}
               </div>
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-md">
-              {/* Asset Card 1 */}
-              <div className="bg-surface-container-lowest rounded-xl border border-outline-variant overflow-hidden soft-elevation flex flex-col group cursor-pointer hover:border-primary/30 transition-all">
-                <div className="h-40 overflow-hidden relative">
-                  <img className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAyJQukrPE1wmKNTYSo3M9LZLwX-01DGcg51zF-BcabWs-HCtOV4Hu--qG-YLfNnxJ2MCq3aA9MRDMCjWeMHrNdIf63asIGHC9fY4K4WfFo9TCmZJ8XAgrY8U6wcIrwZFucW8SVl0SxO3mDvZJgHwVhcs6BQbB7ElDXW-QZOEQTbOBAHrG21qYnp2I7PMTkgfytPGWGO8reFviPRtFojlwzxk56LEo8QSRlEUX52ro9cuZ47TEHBZIKHQ" alt="Studio Display" />
-                  <div className="absolute top-sm right-sm">
-                    <span className="bg-white/90 backdrop-blur px-sm py-1 rounded text-[10px] font-bold text-primary">ELECTRONICS</span>
-                  </div>
-                </div>
-                <div className="p-lg space-y-md">
-                  <div className="flex justify-between items-start">
-                    <div>
-                      <h4 className="font-label-md text-label-md font-bold text-primary">Studio Display 5K</h4>
-                      <p className="font-label-sm text-label-sm text-on-surface-variant">ID: ASSET-9901</p>
-                    </div>
-                    <div className="bg-surface px-sm py-1 rounded border border-outline-variant">
-                      <span className="font-label-sm text-label-sm text-on-surface-variant">Room 302</span>
-                    </div>
-                  </div>
-                  <div className="flex items-center justify-between pt-sm">
-                    <div className="flex -space-x-2">
-                      <div className="w-6 h-6 rounded-full border-2 border-white bg-tertiary-fixed flex items-center justify-center"><span className="text-[8px] font-bold">AR</span></div>
-                      <div className="w-6 h-6 rounded-full border-2 border-white bg-primary-fixed flex items-center justify-center"><span className="text-[8px] font-bold">+2</span></div>
-                    </div>
-                    <button onClick={handleVerify} className="flex items-center space-x-xs px-md py-sm bg-primary text-on-primary rounded-lg font-label-md text-label-md hover:opacity-90 active:scale-95 transition-all">
-                      <span className="material-symbols-outlined text-sm">check</span><span>Verify</span>
-                    </button>
-                  </div>
-                </div>
-              </div>
+            </Card>
+          </section>
 
-              {/* Asset Card 2 */}
-              <div className="bg-surface-container-lowest rounded-xl border border-outline-variant overflow-hidden soft-elevation flex flex-col group cursor-pointer hover:border-primary/30 transition-all">
-                <div className="h-40 overflow-hidden relative">
-                  <img className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDRL8y6cLC81P-OXffqI_wx3X2P6hpV7hyXcH-idZck1Z8GRORldm76SW5iOyh_vD0daPVYdnALWELR9gfb02FpTOEUzHd5UlgFk06PknPcE9GaQ7HTyjAmQQH4_9TXSLdd7FEq0573FDo4-e4yjsn_Fl8pyGLajr1nKzKJ1CVPpRo8x-CxKNuOlaT9BULorUWUTiwiwObvhPscY7SHGYHnbPaKFBQdrUfnUfn485VLu0XhZWgDZq2mSw" alt="Ergonomic Chair" />
-                  <div className="absolute top-sm right-sm">
-                    <span className="bg-white/90 backdrop-blur px-sm py-1 rounded text-[10px] font-bold text-primary">FURNITURE</span>
-                  </div>
-                </div>
-                <div className="p-lg space-y-md">
-                  <div className="flex justify-between items-start">
-                    <div>
-                      <h4 className="font-label-md text-label-md font-bold text-primary">Ergonomic Chair V2</h4>
-                      <p className="font-label-sm text-label-sm text-on-surface-variant">ID: ASSET-4452</p>
-                    </div>
-                    <div className="bg-surface px-sm py-1 rounded border border-outline-variant">
-                      <span className="font-label-sm text-label-sm text-on-surface-variant">Hallway A</span>
-                    </div>
-                  </div>
-                  <div className="flex items-center justify-between pt-sm">
-                    <div className="flex -space-x-2">
-                      <div className="w-6 h-6 rounded-full border-2 border-white bg-tertiary-fixed flex items-center justify-center"><span className="text-[8px] font-bold">JL</span></div>
-                    </div>
-                    <button onClick={handleVerify} className="flex items-center space-x-xs px-md py-sm bg-primary text-on-primary rounded-lg font-label-md text-label-md hover:opacity-90 active:scale-95 transition-all">
-                      <span className="material-symbols-outlined text-sm">check</span><span>Verify</span>
-                    </button>
-                  </div>
-                </div>
-              </div>
+          <section>
+            <Card title="Asset Table" subtitle="Responsive dummy data for the hackathon build">
+              <Table columns={columns} rows={filteredAssets} emptyMessage="No assets match the selected filters." />
+            </Card>
+          </section>
 
-              {/* Asset Card 3 - Flagged */}
-              <div className="bg-surface-container-lowest rounded-xl border border-error/30 overflow-hidden soft-elevation flex flex-col group cursor-pointer hover:border-error transition-all">
-                <div className="h-40 overflow-hidden relative">
-                  <img className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 opacity-80" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCmTduCR5yS3XYZWxHCsqhywN51Ckt2JYYTa3iQnVQVNnyYCZUAFRU97yLsLZ9Cl-RiKhwotxYhO9U97GNOdpoogwoxAjYYAc91jgl1xpsJ6B-6erg-Yy_TvUmBNA-FdCCp2eNjjav-bCkh7rqhRktYlMI7uD2A9HDiYbeV4ugd8SeV55Gq0MDTUKrPJeURHeSRnFEz-vQehoBNiBl1Ht-4UgLX3QUH3KMmfB_wecxWt8YVTC56JG1jTQ" alt="Network Switch" />
-                  <div className="absolute top-sm right-sm">
-                    <span className="bg-error text-white px-sm py-1 rounded text-[10px] font-bold uppercase tracking-widest">DAMAGED</span>
+          <section className="grid grid-cols-1 gap-md xl:grid-cols-3">
+            {filteredAssets.slice(0, 3).map((asset) => (
+              <Card key={asset.id} className="h-full">
+                <div className="flex items-start justify-between gap-4">
+                  <div>
+                    <p className="text-sm uppercase tracking-wide text-outline">{asset.assetTag}</p>
+                    <h3 className="mt-1 text-2xl font-bold text-primary">{asset.name}</h3>
+                    <p className="mt-1 text-on-surface-variant">{asset.category}</p>
                   </div>
+                  <StatusBadge status={asset.status} />
                 </div>
-                <div className="p-lg space-y-md">
-                  <div className="flex justify-between items-start">
-                    <div>
-                      <h4 className="font-label-md text-label-md font-bold text-primary">Network Switch S1</h4>
-                      <p className="font-label-sm text-label-sm text-error">REPORTED ISSUE</p>
-                    </div>
-                    <div className="bg-error-container px-sm py-1 rounded border border-error/10">
-                      <span className="font-label-sm text-label-sm text-on-error-container">Server Rm</span>
-                    </div>
-                  </div>
-                  <div className="flex items-center justify-between pt-sm">
-                    <span className="font-label-sm text-label-sm text-on-surface-variant italic">Awaiting maintenance...</span>
-                    <button className="flex items-center space-x-xs px-md py-sm bg-surface-container text-primary rounded-lg font-label-md text-label-md hover:bg-surface-container-high transition-all">
-                      <span className="material-symbols-outlined text-sm">edit</span><span>Update</span>
-                    </button>
-                  </div>
+                <p className="mt-4 text-sm text-on-surface-variant">{asset.description}</p>
+                <div className="mt-5 space-y-2 text-sm text-on-surface">
+                  <p><span className="font-bold">Location:</span> {asset.location}</p>
+                  <p><span className="font-bold">Assigned:</span> {asset.assignedEmployee}</p>
+                  <p><span className="font-bold">Updated:</span> {asset.lastUpdated}</p>
                 </div>
-              </div>
-            </div>
+                <div className="mt-5 flex flex-wrap gap-2">
+                  <button className="rounded-lg bg-primary px-4 py-2 text-sm font-bold text-on-primary" type="button" onClick={() => openViewModal(asset)}>
+                    View Details
+                  </button>
+                  <button className="rounded-lg border border-outline-variant px-4 py-2 text-sm font-bold text-primary" type="button" onClick={() => { setSelectedAsset(asset); updateSelectedAsset("Allocated", "Allocate Asset"); }}>
+                    Allocate Asset
+                  </button>
+                  <button className="rounded-lg border border-outline-variant px-4 py-2 text-sm font-bold text-primary" type="button" onClick={() => { setSelectedAsset(asset); updateSelectedAsset("Reserved", "Transfer Asset"); }}>
+                    Transfer Asset
+                  </button>
+                  <button className="rounded-lg border border-outline-variant px-4 py-2 text-sm font-bold text-on-surface" type="button" onClick={() => { setSelectedAsset(asset); updateSelectedAsset("Available", "Return Asset"); }}>
+                    Return Asset
+                  </button>
+                </div>
+              </Card>
+            ))}
           </section>
         </div>
       </main>
 
-      {/* FAB */}
-      <div className="fixed bottom-lg right-lg z-50">
-        <button className="w-16 h-16 bg-primary text-on-primary rounded-full soft-elevation flex items-center justify-center hover:scale-105 active:scale-95 transition-all shadow-xl">
-          <span className="material-symbols-outlined text-3xl">qr_code_scanner</span>
-        </button>
-      </div>
+      <Modal open={createOpen} onClose={() => setCreateOpen(false)} title="Register Asset" size="lg">
+        <div className="grid gap-4 sm:grid-cols-2">
+          {[
+            ["assetTag", "Asset Tag"],
+            ["name", "Asset Name"],
+            ["serialNumber", "Serial Number"],
+            ["qrCode", "QR Code"],
+            ["assignedEmployee", "Assigned Employee"],
+            ["lastUpdated", "Last Updated"],
+          ].map(([key, label]) => (
+            <label key={key} className="space-y-2">
+              <span className="text-sm font-bold text-on-surface">{label}</span>
+              <input className={modalField} value={form[key]} onChange={(event) => setForm((current) => ({ ...current, [key]: event.target.value }))} />
+            </label>
+          ))}
+          {[
+            ["category", categoryOptions.slice(1)],
+            ["status", statusOptions.slice(1)],
+            ["department", departmentOptions.slice(1)],
+            ["location", locationOptions.slice(1)],
+            ["condition", ["Good", "Fair", "Damaged"]],
+          ].map(([key, options]) => (
+            <label key={key} className="space-y-2">
+              <span className="text-sm font-bold text-on-surface">{key}</span>
+              <select className={modalField} value={form[key]} onChange={(event) => setForm((current) => ({ ...current, [key]: event.target.value }))}>
+                {options.map((option) => (
+                  <option key={option} value={option}>
+                    {option}
+                  </option>
+                ))}
+              </select>
+            </label>
+          ))}
+          <label className="space-y-2 sm:col-span-2">
+            <span className="text-sm font-bold text-on-surface">Description</span>
+            <textarea className={`${modalField} min-h-28`} value={form.description} onChange={(event) => setForm((current) => ({ ...current, description: event.target.value }))} />
+          </label>
+        </div>
+        <div className="mt-6 flex justify-end gap-3">
+          <button className="rounded-lg border border-outline-variant px-4 py-2 font-bold text-on-surface" onClick={() => setCreateOpen(false)} type="button">
+            Cancel
+          </button>
+          <Button onClick={handleSaveAsset}>Save Asset</Button>
+        </div>
+      </Modal>
+
+      <Modal open={editOpen} onClose={() => setEditOpen(false)} title="Edit Asset" size="lg">
+        <div className="grid gap-4 sm:grid-cols-2">
+          {[
+            ["assetTag", "Asset Tag"],
+            ["name", "Asset Name"],
+            ["serialNumber", "Serial Number"],
+            ["qrCode", "QR Code"],
+            ["assignedEmployee", "Assigned Employee"],
+            ["lastUpdated", "Last Updated"],
+          ].map(([key, label]) => (
+            <label key={key} className="space-y-2">
+              <span className="text-sm font-bold text-on-surface">{label}</span>
+              <input className={modalField} value={form[key]} onChange={(event) => setForm((current) => ({ ...current, [key]: event.target.value }))} />
+            </label>
+          ))}
+          {[
+            ["category", categoryOptions.slice(1)],
+            ["status", statusOptions.slice(1)],
+            ["department", departmentOptions.slice(1)],
+            ["location", locationOptions.slice(1)],
+            ["condition", ["Good", "Fair", "Damaged"]],
+          ].map(([key, options]) => (
+            <label key={key} className="space-y-2">
+              <span className="text-sm font-bold text-on-surface">{key}</span>
+              <select className={modalField} value={form[key]} onChange={(event) => setForm((current) => ({ ...current, [key]: event.target.value }))}>
+                {options.map((option) => (
+                  <option key={option} value={option}>
+                    {option}
+                  </option>
+                ))}
+              </select>
+            </label>
+          ))}
+          <label className="space-y-2 sm:col-span-2">
+            <span className="text-sm font-bold text-on-surface">Description</span>
+            <textarea className={`${modalField} min-h-28`} value={form.description} onChange={(event) => setForm((current) => ({ ...current, description: event.target.value }))} />
+          </label>
+        </div>
+        <div className="mt-6 flex justify-end gap-3">
+          <button className="rounded-lg border border-outline-variant px-4 py-2 font-bold text-on-surface" onClick={() => setEditOpen(false)} type="button">
+            Cancel
+          </button>
+          <Button onClick={handleSaveAsset}>Update Asset</Button>
+        </div>
+      </Modal>
+
+      <Modal open={deleteOpen} onClose={() => setDeleteOpen(false)} title="Delete Asset" size="sm">
+        <p className="text-on-surface-variant">
+          This will remove <span className="font-bold text-on-surface">{selectedAsset?.name}</span> from the dummy dataset.
+        </p>
+        <div className="mt-6 flex justify-end gap-3">
+          <button className="rounded-lg border border-outline-variant px-4 py-2 font-bold text-on-surface" onClick={() => setDeleteOpen(false)} type="button">
+            Cancel
+          </button>
+          <button className="rounded-lg bg-error px-4 py-2 font-bold text-white" onClick={handleDeleteAsset} type="button">
+            Delete
+          </button>
+        </div>
+      </Modal>
+
+      <AssetDetailDrawer
+        asset={selectedAsset}
+        open={viewOpen}
+        onClose={() => setViewOpen(false)}
+        onAllocate={(asset) => {
+          setSelectedAsset(asset);
+          updateSelectedAsset("Allocated", "Allocate Asset");
+        }}
+        onTransfer={(asset) => {
+          setSelectedAsset(asset);
+          updateSelectedAsset("Reserved", "Transfer Asset");
+        }}
+        onReturn={(asset) => {
+          setSelectedAsset(asset);
+          updateSelectedAsset("Available", "Return Asset");
+        }}
+        onTransferRequest={handleTransferRequest}
+      />
     </div>
   );
 }

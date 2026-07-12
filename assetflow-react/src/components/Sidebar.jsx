@@ -1,7 +1,10 @@
 import { useLocation, Link } from 'react-router-dom';
 
 const navItems = [
-  { label: 'Dashboard', icon: 'dashboard', path: '/' },
+  { label: 'Dashboard', icon: 'dashboard', path: '/dashboard' },
+  { label: 'Audit', icon: 'fact_check', path: '/audit' },
+  { label: 'Asset Verification', icon: 'qr_code_scanner', path: '/assets' },
+  { label: 'Reports', icon: 'assessment', path: '/reports' },
   { label: 'Departments', icon: 'domain', path: '/assetflow_department_management' },
   { label: 'Asset Categories', icon: 'category', path: '/assetflow_asset_categories' },
   { label: 'Employee Directory', icon: 'group', path: '/assetflow_employee_directory' },
@@ -10,8 +13,8 @@ const navItems = [
   { label: 'Create Booking', icon: 'add_circle', path: '/assetflow_create_booking' },
   { label: 'Maintenance', icon: 'build', path: '/assetflow_maintenance_requests' },
   { label: 'Maintenance Approval', icon: 'task_alt', path: '/assetflow_maintenance_approval' },
-  { label: 'Audit', icon: 'fact_check', path: '/assetflow_audit_dashboard' },
-  { label: 'Asset Verification', icon: 'qr_code_scanner', path: '/assetflow_asset_verification' },
+  { label: 'Audit Legacy', icon: 'fact_check', path: '/assetflow_audit_dashboard' },
+  { label: 'Asset Verification Legacy', icon: 'qr_code_scanner', path: '/assetflow_asset_verification' },
   { label: 'Discrepancy Report', icon: 'running_with_errors', path: '/assetflow_discrepancy_report' },
   { label: 'Organization Settings', icon: 'settings', path: '/assetflow_organization_settings' },
 ];
@@ -34,7 +37,8 @@ export default function Sidebar() {
       <nav className="flex-1 overflow-y-auto custom-scrollbar pt-md">
         <div className="space-y-1">
           {navItems.map((item) => {
-            const isActive = location.pathname === item.path;
+            const isActive =
+              location.pathname === item.path || (item.path === '/dashboard' && location.pathname === '/');
             return (
               <Link
                 key={item.path}
