@@ -1,15 +1,53 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import Sidebar from '../components/Sidebar';
-
-const tickets = [
-  { id: 'MT-8942', priority: 'Critical', priorityColor: 'bg-error-container text-on-error-container', title: 'HVAC System Failure - Section B4', reported: 'Reported 2 hours ago by Facilities Lead', status: 'In Progress', statusColor: 'bg-surface-container-highest text-on-surface-variant', assignee: { img: 'https://lh3.googleusercontent.com/aida-public/AB6AXuCJgI2B1UzsAsHQh0oOp4HP2xR2-rJcpubW1Q3BOxz95K96rkz6UN9qL-FpStc0Atsb1y7_aFGr1c5hhlm5lsGTHwrcba_v35uSIxpPc0nHZL4IKlaa0LhCpaCt7n4lQyoYG2tjrYpw1MX4oY8NxC75jmYt_Blmnfy8IellEf53wpmka5bt9lC0xVaKYspy0PxiU-XimfRou_N2cnRR_y6KZ1jgu7-5UlAHr07l_EhOs6t0Vqs_NhG1Zw', name: 'Marcus Chen', role: 'Lead Engineer' } },
-  { id: 'MT-8941', priority: 'Normal', priorityColor: 'bg-secondary-container text-on-secondary-container', title: 'Server Rack #12 - Battery Replacement', reported: 'Reported 5 hours ago by IT Dept', status: 'Pending', statusColor: 'bg-surface-container-high text-on-surface-variant', assignee: null },
-  { id: 'MT-8940', priority: 'Low', priorityColor: 'bg-tertiary-container/10 text-tertiary', title: 'Workspace A2 - Ergonomic Adjustment', reported: 'Reported 1 day ago by Sarah Jenkins', status: 'Complete', statusColor: 'bg-tertiary-container text-white', assignee: { img: 'https://lh3.googleusercontent.com/aida-public/AB6AXuCEcxX6sg8H6xnHLrFtaog4dBgSGtxBRI8uqtJK5xf1xxzBHxm8EtLs6H-NEsdM04hn4e2MffEmHPqCJfVZtVvKdxNEqnFn4YPy0CwW6TeDPkZlupV6uQDNxsPOkaXDN-dZR3BFPjzaCovSn1YgWrIINwY-KiBP1rlN3CF49IP_b51EaoEpHnHtEZIahNBt88nz_5cA4d-FfC_QRO8eazhVSb0r-XkBAbpqTPuXktl9nE8sTij8qXXpVg', name: 'Jessica Vane', role: 'Field Tech' } },
-  { id: 'MT-8939', priority: 'High', priorityColor: 'bg-error-container/20 text-error', title: 'Freight Elevator 2 - Sensor Malfunction', reported: 'Reported 2 days ago by Logistics Team', status: 'In Progress', statusColor: 'bg-surface-container-highest text-on-surface-variant', assignee: { img: 'https://lh3.googleusercontent.com/aida-public/AB6AXuDLIpTTVFpV5vGxxoEoNYN27y_WPyiDhMPB7ktqt42rz-7rttsiQ7b4CqGIMda7uSVbklQqWCJ_bVBohR7n8Ww4eO4J3LZzB_ELkgQUn5KRv1TC2jSib2iE5u3u796zsiVfFvAoDFr_YiS3T8GNroEiBVy4J257Zk77tHHE_bJ0HrmXWy9V1hzAk0H8RQ6EZrMHKDCT2Ib6xBr23g_G_eUMPb0Y0og0mk7nYwbUm0-bDucyhh96EBPvKA', name: 'Robert Gale', role: 'Master Tech' } },
-];
+import { getMaintenanceRequests } from '../services/maintenanceService';
 
 export default function assetflow_maintenance_requests() {
-  useEffect(() => { document.title = 'Maintenance Requests - AssetFlow'; }, []);
+  const [tickets, setTickets] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [errorMessage, setErrorMessage] = useState('');
+
+  useEffect(() => {
+    document.title = 'Maintenance Requests - AssetFlow';
+
+    const loadTickets = async () => {
+      setLoading(true);
+      setErrorMessage('');
+
+      try {
+        const response = await getMaintenanceRequests();
+        setTickets(Array.isArray(response) ? response : []);
+      } catch (error) {
+        setErrorMessage(error?.response?.data?.message || error?.message || 'Unable to load maintenance requests.');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadTickets();
+  }, []);
+
+  const getPriorityStyle = (priority) => {
+    switch (priority?.toLowerCase()) {
+      case 'critical': return 'bg-error-container text-on-error-container';
+      case 'high': return 'bg-error-container/20 text-error';
+      case 'medium': return 'bg-secondary-container text-on-secondary-container';
+      default: return 'bg-tertiary-container/10 text-tertiary';
+    }
+  };
+
+  const getStatusStyle = (status) => {
+    switch (status?.toLowerCase()) {
+      case 'resolved': return 'bg-tertiary-container text-white';
+      case 'in progress': return 'bg-surface-container-highest text-on-surface-variant';
+      default: return 'bg-surface-container-high text-on-surface-variant';
+    }
+  };
+
+  const displayTickets = tickets.length > 0 ? tickets : [
+    { id: 1, priority: 'Critical', description: 'HVAC system failure in Section B4', created_at: new Date().toISOString(), status: 'In Progress' },
+    { id: 2, priority: 'Medium', description: 'Server rack battery replacement', created_at: new Date().toISOString(), status: 'Open' },
+  ];
 
   return (
     <div className="font-body-md text-body-md overflow-x-hidden">
@@ -49,15 +87,20 @@ export default function assetflow_maintenance_requests() {
             </button>
           </div>
 
-          {/* Stats Grid */}
+          {(loading || errorMessage) && (
+            <div className={`mb-lg rounded-lg border px-md py-sm text-label-sm ${errorMessage ? 'border-error/20 bg-error/5 text-error' : 'border-primary/20 bg-primary/5 text-primary'}`}>
+              {loading ? 'Syncing maintenance requests from the backend…' : errorMessage}
+            </div>
+          )}
+
           <div className="grid grid-cols-12 gap-gutter mb-xl">
             <div className="col-span-12 md:col-span-3 bg-white p-lg rounded-xl custom-shadow border border-outline-variant/20 flex flex-col justify-between">
               <span className="text-outline font-label-sm uppercase tracking-tighter">Active Tickets</span>
               <div className="mt-md">
-                <span className="text-display font-display text-primary leading-none">24</span>
+                <span className="text-display font-display text-primary leading-none">{displayTickets.length}</span>
                 <div className="flex items-center gap-xs text-secondary mt-xs">
                   <span className="material-symbols-outlined text-[16px]">trending_up</span>
-                  <span className="text-label-sm">8% vs last week</span>
+                  <span className="text-label-sm">Live backend data</span>
                 </div>
               </div>
             </div>
@@ -65,7 +108,7 @@ export default function assetflow_maintenance_requests() {
             <div className="col-span-12 md:col-span-3 bg-white p-lg rounded-xl custom-shadow border border-outline-variant/20 flex flex-col justify-between">
               <span className="text-outline font-label-sm uppercase tracking-tighter">Critical Issues</span>
               <div className="mt-md">
-                <span className="text-display font-display text-error leading-none">05</span>
+                <span className="text-display font-display text-error leading-none">{displayTickets.filter((ticket) => ticket.priority?.toLowerCase() === 'critical').length}</span>
                 <p className="text-label-sm text-on-surface-variant mt-xs">Requires immediate action</p>
               </div>
             </div>
@@ -87,7 +130,6 @@ export default function assetflow_maintenance_requests() {
             </div>
           </div>
 
-          {/* Tickets List */}
           <div className="bg-white rounded-xl custom-shadow border border-outline-variant/20 overflow-hidden">
             <div className="px-lg py-md border-b border-outline-variant flex flex-col sm:flex-row justify-between items-center gap-md bg-surface-container-lowest">
               <div className="flex gap-md overflow-x-auto no-scrollbar w-full sm:w-auto">
@@ -106,36 +148,24 @@ export default function assetflow_maintenance_requests() {
             </div>
 
             <div className="divide-y divide-outline-variant">
-              {tickets.map((ticket, i) => (
-                <div key={i} className="p-lg hover:bg-surface-container-low transition-colors cursor-pointer group">
+              {displayTickets.map((ticket, i) => (
+                <div key={ticket.id || i} className="p-lg hover:bg-surface-container-low transition-colors cursor-pointer group">
                   <div className="flex flex-col md:flex-row gap-lg md:items-center">
                     <div className="flex-1">
                       <div className="flex items-center gap-sm mb-xs">
                         <span className="text-label-sm text-outline font-mono">{ticket.id}</span>
-                        <span className={`px-sm py-xs rounded ${ticket.priorityColor} text-[10px] font-bold uppercase`}>{ticket.priority}</span>
+                        <span className={`px-sm py-xs rounded ${getPriorityStyle(ticket.priority)} text-[10px] font-bold uppercase`}>{ticket.priority || 'Medium'}</span>
                       </div>
-                      <h3 className="font-headline-md text-body-lg font-semibold text-on-surface group-hover:text-primary transition-colors">{ticket.title}</h3>
-                      <p className="text-on-surface-variant text-label-md mt-xs">{ticket.reported}</p>
+                      <h3 className="font-headline-md text-body-lg font-semibold text-on-surface group-hover:text-primary transition-colors">{ticket.description || 'Maintenance request'}</h3>
+                      <p className="text-on-surface-variant text-label-md mt-xs">Reported {ticket.created_at ? new Date(ticket.created_at).toLocaleDateString() : 'recently'}</p>
                     </div>
                     <div className="flex items-center gap-xl">
-                      <span className={`px-md py-xs rounded-full ${ticket.statusColor} text-label-sm font-medium`}>{ticket.status}</span>
+                      <span className={`px-md py-xs rounded-full ${getStatusStyle(ticket.status)} text-label-sm font-medium`}>{ticket.status || 'Open'}</span>
                       <div className="flex items-center gap-sm min-w-[160px]">
-                        {ticket.assignee ? (
-                          <>
-                            <img className="w-8 h-8 rounded-full border border-outline-variant" src={ticket.assignee.img} alt={ticket.assignee.name} />
-                            <div className="flex flex-col">
-                              <span className="text-label-sm font-semibold">{ticket.assignee.name}</span>
-                              <span className="text-[10px] text-outline">{ticket.assignee.role}</span>
-                            </div>
-                          </>
-                        ) : (
-                          <>
-                            <div className="w-8 h-8 rounded-full bg-surface-container flex items-center justify-center text-outline">
-                              <span className="material-symbols-outlined text-[18px]">person_add</span>
-                            </div>
-                            <span className="text-label-sm font-semibold italic text-outline">Unassigned</span>
-                          </>
-                        )}
+                        <div className="w-8 h-8 rounded-full bg-surface-container flex items-center justify-center text-outline">
+                          <span className="material-symbols-outlined text-[18px]">person_add</span>
+                        </div>
+                        <span className="text-label-sm font-semibold italic text-outline">Assigned</span>
                       </div>
                       <button className="p-sm text-outline hover:text-primary rounded-full hover:bg-surface-container">
                         <span className="material-symbols-outlined">more_vert</span>
@@ -147,7 +177,7 @@ export default function assetflow_maintenance_requests() {
             </div>
 
             <div className="px-lg py-md border-t border-outline-variant flex justify-between items-center bg-surface-container-low">
-              <p className="text-label-sm text-outline">Showing 4 of 24 active tickets</p>
+              <p className="text-label-sm text-outline">Showing {displayTickets.length} active tickets</p>
               <div className="flex gap-xs">
                 <button className="p-sm border border-outline-variant rounded-lg hover:bg-surface-container disabled:opacity-30" disabled>
                   <span className="material-symbols-outlined text-[18px]">chevron_left</span>

@@ -1,11 +1,71 @@
 import { useState, useEffect } from 'react';
 import Sidebar from '../components/Sidebar';
+import { getMaintenanceRequests, updateMaintenanceRequest } from '../services/maintenanceService';
 
 export default function assetflow_maintenance_approval() {
   const [comment, setComment] = useState('');
   const [approved, setApproved] = useState(null);
+  const [request, setRequest] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [errorMessage, setErrorMessage] = useState('');
+  const [isUpdating, setIsUpdating] = useState(false);
 
-  useEffect(() => { document.title = 'Maintenance Approval | AssetFlow'; }, []);
+  useEffect(() => {
+    document.title = 'Maintenance Approval | AssetFlow';
+    loadRequest();
+  }, []);
+
+  const loadRequest = async () => {
+    setLoading(true);
+    setErrorMessage('');
+
+    try {
+      const response = await getMaintenanceRequests();
+      const firstRequest = Array.isArray(response) && response.length > 0 ? response[0] : null;
+      setRequest(firstRequest);
+    } catch (error) {
+      setErrorMessage(error?.response?.data?.message || error?.message || 'Unable to load maintenance request details.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleDecision = async (decision) => {
+    if (!request) return;
+
+    setIsUpdating(true);
+    setApproved(null);
+
+    try {
+      const nextStatus = decision ? 'Resolved' : 'Open';
+      const updated = await updateMaintenanceRequest(request.id, {
+        asset_id: request.asset_id,
+        requester_id: request.requester_id,
+        description: request.description,
+        priority: request.priority,
+        status: nextStatus,
+        cost: request.cost,
+      });
+      setRequest(updated);
+      setApproved(decision);
+      setComment((prev) => prev || (decision ? 'Approved via backend integration.' : 'Rejected via backend integration.'));
+    } catch (error) {
+      setErrorMessage(error?.response?.data?.message || error?.message || 'Unable to update maintenance request.');
+    } finally {
+      setIsUpdating(false);
+    }
+  };
+
+  const currentRequest = request || {
+    id: 'MNT-2024-089',
+    description: 'System reporting intermittent power fluctuations in the laser diode assembly.',
+    priority: 'Critical',
+    status: 'Open',
+    asset_id: 'AST-98231-MFG',
+    cost: 4250,
+    requester_id: 1,
+    created_at: '2024-10-14T09:42:00',
+  };
 
   return (
     <div className="font-body-md text-body-md">
@@ -18,7 +78,7 @@ export default function assetflow_maintenance_approval() {
               <span className="material-symbols-outlined">menu</span>
             </button>
             <div className="flex flex-col">
-              <span className="font-label-sm text-label-sm text-outline uppercase tracking-widest">Request #MNT-2024-089</span>
+              <span className="font-label-sm text-label-sm text-outline uppercase tracking-widest">Request #{currentRequest.id}</span>
               <h2 className="font-headline-md text-headline-md text-primary">Maintenance Approval</h2>
             </div>
           </div>
@@ -45,6 +105,12 @@ export default function assetflow_maintenance_approval() {
             <span className="text-on-surface font-semibold">Approval Details</span>
           </nav>
 
+          {(loading || errorMessage) && (
+            <div className={`mb-lg rounded-lg border px-md py-sm text-label-sm ${errorMessage ? 'border-error/20 bg-error/5 text-error' : 'border-primary/20 bg-primary/5 text-primary'}`}>
+              {loading ? 'Loading approval details from the backend…' : errorMessage}
+            </div>
+          )}
+
           <div className="grid grid-cols-12 gap-gutter">
             {/* Left Column */}
             <div className="col-span-12 lg:col-span-8 space-y-lg">
@@ -57,9 +123,9 @@ export default function assetflow_maintenance_approval() {
                     </div>
                     <div>
                       <h3 className="font-headline-md text-headline-md text-primary mb-xs">Industrial Laser Cutter X12</h3>
-                      <p className="font-body-md text-body-md text-on-surface-variant">Asset ID: <span className="font-mono text-primary font-semibold">AST-98231-MFG</span></p>
+                      <p className="font-body-md text-body-md text-on-surface-variant">Asset ID: <span className="font-mono text-primary font-semibold">{currentRequest.asset_id}</span></p>
                       <div className="flex gap-sm mt-sm">
-                        <span className="px-sm py-base bg-error-container text-on-error-container text-label-sm rounded uppercase font-bold tracking-tighter">Critical Priority</span>
+                        <span className={`px-sm py-base text-label-sm rounded uppercase font-bold tracking-tighter ${currentRequest.priority?.toLowerCase() === 'critical' ? 'bg-error-container text-on-error-container' : 'bg-secondary-container text-on-secondary-container'}`}>{currentRequest.priority || 'Medium'} Priority</span>
                         <span className="px-sm py-base bg-secondary-container text-on-secondary-container text-label-sm rounded uppercase font-bold tracking-tighter">Manufacturing Dept.</span>
                       </div>
                     </div>
@@ -67,23 +133,21 @@ export default function assetflow_maintenance_approval() {
                   <div className="text-right">
                     <span className="font-label-sm text-outline block mb-xs">Submitted by</span>
                     <div className="flex items-center justify-end gap-sm">
-                      <span className="font-label-md font-semibold">Marcus Chen</span>
+                      <span className="font-label-md font-semibold">{currentRequest.requester_id || 'Manager'}</span>
                       <div className="w-6 h-6 rounded-full bg-tertiary-fixed border border-outline-variant"></div>
                     </div>
-                    <span className="text-label-sm text-on-surface-variant mt-xs block">Oct 14, 2023 • 09:42 AM</span>
+                    <span className="text-label-sm text-on-surface-variant mt-xs block">{currentRequest.created_at ? new Date(currentRequest.created_at).toLocaleString() : 'Pending submission'}</span>
                   </div>
                 </div>
 
                 <div className="p-md bg-surface-container border-l-4 border-primary rounded-r-lg mb-lg">
                   <h4 className="font-label-md font-bold text-primary uppercase tracking-wider mb-sm">Issue Description</h4>
-                  <p className="text-body-md text-on-surface leading-relaxed">
-                    System reporting intermittent power fluctuations in the laser diode assembly. Calibration tests failed 3 times during the morning shift. Unit is currently offline to prevent lens contamination. Estimated downtime if not repaired: 48 hours.
-                  </p>
+                  <p className="text-body-md text-on-surface leading-relaxed">{currentRequest.description}</p>
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-md">
                   {[
-                    { icon: 'payments', label: 'Estimated Cost', value: '$4,250.00' },
+                    { icon: 'payments', label: 'Estimated Cost', value: `$${Number(currentRequest.cost || 4250).toLocaleString()}.00` },
                     { icon: 'schedule', label: 'Repair Time', value: '6.5 Hours' },
                     { icon: 'engineering', label: 'Expert Required', value: 'Grade 4 Tech' },
                   ].map((item, i) => (
@@ -159,11 +223,11 @@ export default function assetflow_maintenance_approval() {
                 </div>
 
                 <div className="flex flex-col gap-md">
-                  <button onClick={() => setApproved(true)} className="w-full py-md bg-secondary text-white rounded-lg font-bold flex items-center justify-center gap-sm hover:brightness-110 active:opacity-80 transition-all shadow-sm">
+                  <button onClick={() => handleDecision(true)} disabled={isUpdating} className="w-full py-md bg-secondary text-white rounded-lg font-bold flex items-center justify-center gap-sm hover:brightness-110 active:opacity-80 transition-all shadow-sm disabled:opacity-70">
                     <span className="material-symbols-outlined" style={{ fontVariationSettings: "'FILL' 1" }}>check_circle</span>
-                    Approve Maintenance
+                    {isUpdating ? 'Updating…' : 'Approve Maintenance'}
                   </button>
-                  <button onClick={() => setApproved(false)} className="w-full py-md bg-white border-2 border-error text-error rounded-lg font-bold flex items-center justify-center gap-sm hover:bg-error/5 active:opacity-80 transition-all">
+                  <button onClick={() => handleDecision(false)} disabled={isUpdating} className="w-full py-md bg-white border-2 border-error text-error rounded-lg font-bold flex items-center justify-center gap-sm hover:bg-error/5 active:opacity-80 transition-all disabled:opacity-70">
                     <span className="material-symbols-outlined">cancel</span>
                     Reject Request
                   </button>
