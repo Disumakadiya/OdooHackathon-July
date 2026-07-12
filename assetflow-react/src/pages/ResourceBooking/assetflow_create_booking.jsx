@@ -1,18 +1,67 @@
 import { useState, useEffect } from 'react';
 import Sidebar from '../../components/Sidebar';
+import { createBooking, getBookings } from '../../services/bookingService';
+
+
 
 export default function assetflow_create_booking() {
   const [panelOpen, setPanelOpen] = useState(false);
   const [toastVisible, setToastVisible] = useState(false);
   const [selectedResource, setSelectedResource] = useState('laptop');
+  const [reservations, setReservations] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [submitError, setSubmitError] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [formData, setFormData] = useState({
+    startDate: '2024-10-14',
+    startTime: '09:00',
+    endTime: '17:00',
+    purpose: 'Operational booking',
+  });
 
-  useEffect(() => { document.title = 'AssetFlow | Resource Booking'; }, []);
+  useEffect(() => {
+    document.title = 'AssetFlow | Resource Booking';
+    loadReservations();
+  }, []);
 
-  const submitBooking = () => {
-    setPanelOpen(false);
-    document.body.style.overflow = '';
-    setToastVisible(true);
-    setTimeout(() => setToastVisible(false), 3000);
+  const loadReservations = async () => {
+    setLoading(true);
+    try {
+      const bookingData = await getBookings();
+      setReservations(Array.isArray(bookingData) ? bookingData : []);
+    } catch (error) {
+      setSubmitError(error?.response?.data?.message || error?.message || 'Unable to load bookings.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const submitBooking = async () => {
+    setIsSubmitting(true);
+    setSubmitError('');
+
+    try {
+      const payload = {
+        asset_id: 1,
+        employee_id: 1,
+        start_time: `${formData.startDate}T${formData.startTime}:00`,
+        end_time: `${formData.startDate}T${formData.endTime}:00`,
+        purpose: formData.purpose,
+        status: 'pending',
+      };
+
+      await createBooking(payload);
+      await loadReservations();
+
+      setPanelOpen(false);
+      document.body.style.overflow = '';
+      setToastVisible(true);
+      setTimeout(() => setToastVisible(false), 3000);
+    } catch (error) {
+      setSubmitError(error?.response?.data?.message || error?.message || 'Booking creation failed.');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const openPanel = () => { setPanelOpen(true); document.body.style.overflow = 'hidden'; };
@@ -62,7 +111,7 @@ export default function assetflow_create_booking() {
               </div>
               <div>
                 <p className="font-label-sm text-on-surface-variant">Active Bookings</p>
-                <p className="font-headline-md text-primary">12 Assets</p>
+                <p className="font-headline-md text-primary">{reservations.length > 0 ? `${reservations.length} Bookings` : 'Live Data'}</p>
               </div>
             </div>
             <div className="bg-surface-container-lowest rounded-xl p-lg soft-shadow border border-outline-variant flex items-center gap-lg">
@@ -71,7 +120,7 @@ export default function assetflow_create_booking() {
               </div>
               <div>
                 <p className="font-label-sm text-on-surface-variant">Next Reservation</p>
-                <p className="font-headline-md text-primary">In 2 hours</p>
+                <p className="font-headline-md text-primary">{loading ? 'Loading...' : (reservations[0] ? 'Connected' : 'Ready')}</p>
               </div>
             </div>
           </div>
@@ -86,8 +135,25 @@ export default function assetflow_create_booking() {
               <span className="material-symbols-outlined p-sm bg-surface rounded-lg border border-outline-variant cursor-pointer text-on-surface-variant">search</span>
             </div>
           </div>
+          {submitError && <div className="mb-md rounded-lg border border-error/20 bg-error/5 px-md py-sm text-label-sm text-error">{submitError}</div>}
           <div className="space-y-sm">
-            {[
+            {reservations.length > 0 ? reservations.slice(0, 3).map((item, i) => (
+              <div key={item.id || i} className="flex items-center justify-between p-md hover:bg-surface-container-low rounded-lg transition-colors group cursor-pointer border-b border-outline-variant/30">
+                <div className="flex items-center gap-md">
+                  <div className="w-10 h-10 bg-surface-container-highest rounded-lg flex items-center justify-center text-on-surface-variant">
+                    <span className="material-symbols-outlined">{i === 0 ? 'meeting_room' : i === 1 ? 'laptop_mac' : 'camera_alt'}</span>
+                  </div>
+                  <div>
+                    <p className="font-label-md text-on-surface">{item.purpose || 'Reserved Asset'}</p>
+                    <p className="font-label-sm text-on-surface-variant">{new Date(item.start_time).toLocaleString()}</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-xl">
+                  <span className={`font-label-sm ${item.status === 'Confirmed' ? 'text-secondary bg-secondary-container/30' : 'text-tertiary bg-tertiary-container/30'} px-sm py-1 rounded-full`}>{item.status || 'Pending'}</span>
+                  <span className="material-symbols-outlined opacity-0 group-hover:opacity-100 transition-opacity text-on-surface-variant">more_vert</span>
+                </div>
+              </div>
+            )) : [
               { icon: 'meeting_room', name: 'Conference Room Alpha', detail: 'Today • 2:00 PM - 4:00 PM', status: 'Confirmed', statusColor: 'text-secondary bg-secondary-container/30' },
               { icon: 'laptop_mac', name: 'MacBook Pro M3 Max #04', detail: 'Oct 14 - Oct 16 • All day', status: 'Pending', statusColor: 'text-tertiary bg-tertiary-container/30' },
               { icon: 'camera_alt', name: 'Sony A7R V Camera Kit', detail: 'Oct 15 • 10:00 AM - 1:00 PM', status: 'Confirmed', statusColor: 'text-secondary bg-secondary-container/30' },
@@ -177,16 +243,31 @@ export default function assetflow_create_booking() {
             <div className="bg-surface-container rounded-xl p-md space-y-md">
               <div>
                 <p className="text-xs text-on-surface-variant mb-xs ml-1 uppercase font-bold tracking-tighter">Start Date</p>
-                <input className="w-full bg-surface-container-lowest border border-outline-variant rounded-lg p-md focus:ring-2 focus:ring-secondary/20 focus:border-primary outline-none transition-all" type="date" defaultValue="2024-10-14" />
+                <input
+                  className="w-full bg-surface-container-lowest border border-outline-variant rounded-lg p-md focus:ring-2 focus:ring-secondary/20 focus:border-primary outline-none transition-all"
+                  type="date"
+                  value={formData.startDate}
+                  onChange={(event) => setFormData((prev) => ({ ...prev, startDate: event.target.value }))}
+                />
               </div>
               <div className="grid grid-cols-2 gap-md">
                 <div>
                   <p className="text-xs text-on-surface-variant mb-xs ml-1 uppercase font-bold tracking-tighter">Start Time</p>
-                  <input className="w-full bg-surface-container-lowest border border-outline-variant rounded-lg p-md focus:ring-2 focus:ring-secondary/20 focus:border-primary outline-none transition-all" type="time" defaultValue="09:00" />
+                  <input
+                    className="w-full bg-surface-container-lowest border border-outline-variant rounded-lg p-md focus:ring-2 focus:ring-secondary/20 focus:border-primary outline-none transition-all"
+                    type="time"
+                    value={formData.startTime}
+                    onChange={(event) => setFormData((prev) => ({ ...prev, startTime: event.target.value }))}
+                  />
                 </div>
                 <div>
                   <p className="text-xs text-on-surface-variant mb-xs ml-1 uppercase font-bold tracking-tighter">End Time</p>
-                  <input className="w-full bg-surface-container-lowest border border-outline-variant rounded-lg p-md focus:ring-2 focus:ring-secondary/20 focus:border-primary outline-none transition-all" type="time" defaultValue="17:00" />
+                  <input
+                    className="w-full bg-surface-container-lowest border border-outline-variant rounded-lg p-md focus:ring-2 focus:ring-secondary/20 focus:border-primary outline-none transition-all"
+                    type="time"
+                    value={formData.endTime}
+                    onChange={(event) => setFormData((prev) => ({ ...prev, endTime: event.target.value }))}
+                  />
                 </div>
               </div>
               <div className="flex items-center gap-sm pt-sm border-t border-outline-variant/30">
@@ -202,7 +283,13 @@ export default function assetflow_create_booking() {
               <span className="material-symbols-outlined text-secondary">description</span>
               <label className="font-label-md text-on-surface">Purpose & Notes</label>
             </div>
-            <textarea className="w-full bg-surface-container-lowest border border-outline-variant rounded-lg p-md focus:ring-2 focus:ring-secondary/20 focus:border-primary outline-none transition-all resize-none placeholder:text-on-surface-variant/50" placeholder="Briefly describe what you'll be using this for..." rows="4"></textarea>
+            <textarea
+              className="w-full bg-surface-container-lowest border border-outline-variant rounded-lg p-md focus:ring-2 focus:ring-secondary/20 focus:border-primary outline-none transition-all resize-none placeholder:text-on-surface-variant/50"
+              placeholder="Briefly describe what you'll be using this for..."
+              rows="4"
+              value={formData.purpose}
+              onChange={(event) => setFormData((prev) => ({ ...prev, purpose: event.target.value }))}
+            ></textarea>
             <div className="flex items-center justify-between p-sm bg-surface-container-low rounded-lg border border-outline-variant/40">
               <div className="flex items-center gap-sm">
                 <span className="material-symbols-outlined text-on-surface-variant">attach_file</span>
@@ -217,8 +304,8 @@ export default function assetflow_create_booking() {
           <button onClick={closePanel} className="flex-1 py-md border border-outline-variant text-on-surface-variant rounded-lg font-label-md hover:bg-surface-container transition-all">
             Cancel
           </button>
-          <button onClick={submitBooking} className="flex-[2] py-md bg-primary text-on-primary rounded-lg font-label-md hover:opacity-90 active:scale-95 transition-all flex items-center justify-center gap-sm shadow-lg">
-            Confirm Reservation <span className="material-symbols-outlined text-lg">check_circle</span>
+          <button onClick={submitBooking} disabled={isSubmitting} className="flex-[2] py-md bg-primary text-on-primary rounded-lg font-label-md hover:opacity-90 active:scale-95 transition-all flex items-center justify-center gap-sm shadow-lg disabled:opacity-70">
+            {isSubmitting ? 'Submitting…' : 'Confirm Reservation'} <span className="material-symbols-outlined text-lg">check_circle</span>
           </button>
         </div>
       </div>
