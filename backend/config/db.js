@@ -1,34 +1,15 @@
-const { Pool } = require('pg');
-require('dotenv').config();
+import pkg from "pg";
+import dotenv from "dotenv";
+
+dotenv.config({ override: true });
+
+const { Pool } = pkg;
 
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
-  ssl:
-    process.env.DATABASE_URL && process.env.DATABASE_URL.includes('neon.tech')
-      ? { rejectUnauthorized: false }
-      : false,
+  ssl: {
+    rejectUnauthorized: false,
+  },
 });
 
-const query = async (text, params) => {
-  return pool.query(text, params);
-};
-
-const testConnection = async () => {
-  if (!process.env.DATABASE_URL) {
-    throw new Error('DATABASE_URL is not defined in .env');
-  }
-
-  const client = await pool.connect();
-  try {
-    await client.query('SELECT NOW()');
-    console.log('PostgreSQL connection successful');
-  } finally {
-    client.release();
-  }
-};
-
-module.exports = {
-  pool,
-  query,
-  testConnection,
-};
+export default pool;

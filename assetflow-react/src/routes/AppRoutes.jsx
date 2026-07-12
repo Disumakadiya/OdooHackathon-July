@@ -1,4 +1,5 @@
 import { Route, Routes } from "react-router-dom";
+import ProtectedRoute from "../components/ProtectedRoute";
 
 import AssetflowEnterpriseAuthentication from "../pages/Authentication/assetflow_enterprise_authentication";
 import AssetflowAdminDashboard from "../pages/Dashboard/assetflow_admin_dashboard";
@@ -32,26 +33,29 @@ export default function AppRoutes() {
       <Route path="/assets" element={<AssetflowAssetVerification />} />
       <Route path="/reports" element={<AssetflowAdminDashboard />} />
       <Route path="/login" element={<AssetflowEnterpriseAuthentication />} />
-      <Route path="/assetflow_department_management" element={<AssetflowDepartmentManagement />} />
-      <Route path="/assetflow_employee_directory" element={<AssetflowEmployeeDirectory />} />
-      <Route path="/assetflow_asset_categories" element={<AssetflowAssetCategories />} />
-      <Route path="/assetflow_user_role_management" element={<AssetflowUserRoleManagement />} />
-      <Route path="/assetflow_organization_settings" element={<AssetflowOrganizationSettings />} />
-      <Route path="/assetflow_asset_verification" element={<AssetflowAssetVerification />} />
-      <Route path="/assetflow_asset_directory" element={<AssetflowAssetDirectory />} />
-      <Route path="/assetflow_asset_registration" element={<AssetflowAssetRegistration />} />
-      <Route path="/assetflow_asset_allocation" element={<AssetflowAssetAllocation />} />
-      <Route path="/assetflow_asset_transfer" element={<AssetflowAssetTransfer />} />
-      <Route path="/assetflow_asset_return" element={<AssetflowAssetReturn />} />
-      <Route path="/assetflow_booking_calendar" element={<AssetflowBookingCalendar />} />
-      <Route path="/assetflow_create_booking" element={<AssetflowCreateBooking />} />
-      <Route path="/assetflow_maintenance_requests" element={<AssetflowMaintenanceRequests />} />
-      <Route path="/assetflow_maintenance_approval" element={<AssetflowMaintenanceApproval />} />
-      <Route path="/assetflow_audit_dashboard" element={<AssetflowAuditDashboard />} />
-      <Route path="/assetflow_discrepancy_report" element={<AssetflowDiscrepancyReport />} />
-      <Route path="/assetflow_reports" element={<AssetflowReports />} />
-      <Route path="/assetflow_analytics" element={<AssetflowAnalytics />} />
-      <Route path="/assetflow_notifications" element={<AssetflowNotifications />} />
+      <Route element={<ProtectedRoute />}>
+        <Route path="/" element={<AssetflowAdminDashboard />} />
+        <Route path="/assetflow_department_management" element={<AssetflowDepartmentManagement />} />
+        <Route path="/assetflow_employee_directory" element={<AssetflowEmployeeDirectory />} />
+        <Route path="/assetflow_asset_categories" element={<AssetflowAssetCategories />} />
+        <Route path="/assetflow_user_role_management" element={<AssetflowUserRoleManagement />} />
+        <Route path="/assetflow_organization_settings" element={<AssetflowOrganizationSettings />} />
+        <Route path="/assetflow_asset_verification" element={<AssetflowAssetVerification />} />
+        <Route path="/assetflow_asset_directory" element={<AssetflowAssetDirectory />} />
+        <Route path="/assetflow_asset_registration" element={<AssetflowAssetRegistration />} />
+        <Route path="/assetflow_asset_allocation" element={<AssetflowAssetAllocation />} />
+        <Route path="/assetflow_asset_transfer" element={<AssetflowAssetTransfer />} />
+        <Route path="/assetflow_asset_return" element={<AssetflowAssetReturn />} />
+        <Route path="/assetflow_booking_calendar" element={<AssetflowBookingCalendar />} />
+        <Route path="/assetflow_create_booking" element={<AssetflowCreateBooking />} />
+        <Route path="/assetflow_maintenance_requests" element={<AssetflowMaintenanceRequests />} />
+        <Route path="/assetflow_maintenance_approval" element={<AssetflowMaintenanceApproval />} />
+        <Route path="/assetflow_audit_dashboard" element={<AssetflowAuditDashboard />} />
+        <Route path="/assetflow_discrepancy_report" element={<AssetflowDiscrepancyReport />} />
+        <Route path="/assetflow_reports" element={<AssetflowReports />} />
+        <Route path="/assetflow_analytics" element={<AssetflowAnalytics />} />
+        <Route path="/assetflow_notifications" element={<AssetflowNotifications />} />
+      </Route>
     </Routes>
   );
 }
