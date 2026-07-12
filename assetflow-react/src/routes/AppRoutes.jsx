@@ -27,19 +27,30 @@ import AssetflowNotifications from "../pages/Notifications/assetflow_notificatio
 export default function AppRoutes() {
   return (
     <Routes>
-      <Route path="/" element={<AssetflowAdminDashboard />} />
-      <Route path="/dashboard" element={<AssetflowAdminDashboard />} />
-      <Route path="/audit" element={<AssetflowAuditDashboard />} />
-      <Route path="/assets" element={<AssetflowAssetVerification />} />
-      <Route path="/reports" element={<AssetflowAdminDashboard />} />
       <Route path="/login" element={<AssetflowEnterpriseAuthentication />} />
+      
+      {/* Base protected routes (accessible to authenticated users) */}
       <Route element={<ProtectedRoute />}>
         <Route path="/" element={<AssetflowAdminDashboard />} />
-        <Route path="/assetflow_department_management" element={<AssetflowDepartmentManagement />} />
-        <Route path="/assetflow_employee_directory" element={<AssetflowEmployeeDirectory />} />
-        <Route path="/assetflow_asset_categories" element={<AssetflowAssetCategories />} />
-        <Route path="/assetflow_user_role_management" element={<AssetflowUserRoleManagement />} />
-        <Route path="/assetflow_organization_settings" element={<AssetflowOrganizationSettings />} />
+        <Route path="/dashboard" element={<AssetflowAdminDashboard />} />
+        <Route path="/audit" element={<AssetflowAuditDashboard />} />
+        <Route path="/assets" element={<AssetflowAssetVerification />} />
+        <Route path="/reports" element={<AssetflowAdminDashboard />} />
+        
+        {/* Admin Only Routes */}
+        <Route element={<ProtectedRoute allowedRoles={['Admin']} />}>
+          <Route path="/assetflow_department_management" element={<AssetflowDepartmentManagement />} />
+          <Route path="/assetflow_user_role_management" element={<AssetflowUserRoleManagement />} />
+          <Route path="/assetflow_organization_settings" element={<AssetflowOrganizationSettings />} />
+        </Route>
+
+        {/* Admin & Asset Manager Routes */}
+        <Route element={<ProtectedRoute allowedRoles={['Admin', 'Asset Manager']} />}>
+          <Route path="/assetflow_asset_categories" element={<AssetflowAssetCategories />} />
+          <Route path="/assetflow_employee_directory" element={<AssetflowEmployeeDirectory />} />
+        </Route>
+
+        {/* Shared / Other Routes */}
         <Route path="/assetflow_asset_verification" element={<AssetflowAssetVerification />} />
         <Route path="/assetflow_asset_directory" element={<AssetflowAssetDirectory />} />
         <Route path="/assetflow_asset_registration" element={<AssetflowAssetRegistration />} />

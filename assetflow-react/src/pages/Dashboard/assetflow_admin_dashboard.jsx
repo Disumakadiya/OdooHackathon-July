@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
+import { useAuth } from "../../context/AuthContext";
 import Card from "../../components/Card";
 import NotificationCard from "../../components/NotificationCard";
 import SearchBar from "../../components/SearchBar";
@@ -20,6 +21,7 @@ export default function assetflow_admin_dashboard() {
   const location = useLocation();
   const reportRef = useRef(null);
   const [searchText, setSearchText] = useState("");
+  const { user } = useAuth();
 
   useEffect(() => {
     document.title = location.pathname === "/reports" ? "AssetFlow | Reports" : "AssetFlow | Dashboard";
@@ -69,7 +71,9 @@ export default function assetflow_admin_dashboard() {
 
         <div className="mx-auto max-w-max-width space-y-xl p-lg pb-2xl">
           <section>
-            <h2 className="font-headline-lg text-headline-lg text-primary">Dashboard</h2>
+            <h2 className="font-headline-lg text-headline-lg text-primary">
+              Welcome back, {user?.name || 'Admin'}
+            </h2>
             <p className="mt-xs font-body-md text-body-md text-on-surface-variant">
               Enterprise asset and resource snapshot with live operational indicators.
             </p>
