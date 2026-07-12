@@ -1,16 +1,92 @@
-# React + Vite
+# 🚀 AssetFlow - Enterprise Asset & Resource Management System
 
-This template provides a minimal setup to get React working in Vite with HMR and some Oxlint rules.
+AssetFlow is a modern Enterprise Asset & Resource Management platform developed for the **Odoo Hackathon 2026**. It enables organizations to efficiently manage assets, streamline maintenance workflows, optimize resource bookings, and maintain audit compliance through a centralized, role-based system.
 
-Currently, two official plugins are available:
+## ✨ Features
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+- 🔐 Secure Authentication & Role-Based Access Control
+- 📊 Interactive Dashboard with Analytics
+- 🏢 Department & Employee Management
+- 📦 Asset Registration & Category Management
+- 📅 Resource Booking & Scheduling
+- 🛠️ Maintenance Request & Approval Workflow
+- ✅ Asset Verification & Audit Management
+- 🔔 Notification & Activity Tracking
+- 📈 Reports & Insights
 
-## React Compiler
+## 🛠️ Tech Stack
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+**Frontend**
+- React.js
+- Vite
+- React Router
+- Tailwind CSS
 
-## Expanding the Oxlint configuration
+**Backend**
+- Node.js
+- Express.js
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and Oxlint's TypeScript related rules in your project.
+**Database**
+- PostgreSQL (NeonDB)
+
+**Version Control**
+- Git & GitHub
+
+---
+
+## 📂 Project Structure
+
+```text
+AssetFlow/
+│
+├── frontend/
+├── backend/
+├── database/
+└── README.md
+```
+
+---
+
+## 🚀 Getting Started
+
+### Clone the repository
+
+```bash
+git clone <repository-url>
+```
+
+### Install dependencies
+
+Frontend
+
+```bash
+cd frontend
+npm install
+npm run dev
+```
+
+Backend
+
+```bash
+cd backend
+npm install
+npm run dev
+```
+
+---
+
+## 👥 Team
+
+This project was collaboratively developed during the **Odoo Hackathon 2026**, with each team member contributing to different functional modules following a modular development approach.
+
+---
+
+## 🎯 Vision
+
+AssetFlow aims to simplify enterprise asset management by providing a scalable, secure, and user-friendly platform that improves operational efficiency, enhances resource utilization, and supports informed decision-making through centralized data management.
+
+---
+
+## 📄 License
+
+Developed exclusively for the **Odoo Hackathon 2026**. This project is intended for demonstration and educational purposes.
