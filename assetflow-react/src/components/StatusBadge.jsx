@@ -11,6 +11,12 @@ const statusStyles = {
   missing: "bg-error/10 text-error border-error/20",
   damaged: "bg-tertiary-container/20 text-tertiary border-tertiary/20",
   lost: "bg-error/10 text-error border-error/20",
+  available: "bg-secondary/10 text-secondary border-secondary/20",
+  allocated: "bg-primary/10 text-primary border-primary/20",
+  reserved: "bg-tertiary-container/20 text-tertiary border-tertiary/20",
+  "under maintenance": "bg-error/10 text-error border-error/20",
+  retired: "bg-outline-variant/30 text-on-surface-variant border-outline-variant",
+  disposed: "bg-surface-container text-on-surface-variant border-outline-variant",
 };
 
 export default function StatusBadge({ status = "Pending", className = "" }) {
