@@ -8,9 +8,12 @@ export default function assetflow_enterprise_authentication() {
   const canvasRef = useRef(null);
   const [btnText, setBtnText] = useState('Continue');
   const [isLogin, setIsLogin] = useState(true);
+  const [isForgotPassword, setIsForgotPassword] = useState(false);
   const [name, setName] = useState('');
+  const [phone, setPhone] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [errorMsg, setErrorMsg] = useState('');
 
   useEffect(() => {
@@ -92,10 +95,36 @@ void main() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setErrorMsg('');
+
+    if (isForgotPassword) {
+      setBtnText('Sending Link...');
+      setTimeout(() => {
+        setBtnText('Reset link sent!');
+        setTimeout(() => {
+          setIsForgotPassword(false);
+          setBtnText('Continue');
+        }, 2000);
+      }, 1000);
+      return;
+    }
+
+    if (!isLogin) {
+      if (password !== confirmPassword) {
+        setErrorMsg('Passwords do not match');
+        return;
+      }
+      const isStrongPassword = /^(?=.*[0-9])(?=.*[!@#$%^&*])[a-zA-Z0-9!@#$%^&*]{8,}$/.test(password);
+      if (!isStrongPassword) {
+        setErrorMsg('Password must be at least 8 characters long and contain at least one number and one special character');
+        return;
+      }
+    }
+
     setBtnText(isLogin ? 'Authenticating...' : 'Registering...');
     
     try {
-      const payload = isLogin ? { email, password } : { email, password, name };
+      const endpoint = isLogin ? 'http://localhost:5000/api/auth/login' : 'http://localhost:5000/api/auth/register';
+      const payload = isLogin ? { email, password } : { email, password, name, phone };
 
       const response = await fetch(endpoint, {
         method: 'POST',
@@ -148,62 +177,84 @@ void main() {
           <span className="font-display text-xl font-bold text-primary">AssetFlow</span>
         </div>
         <div className="hidden md:flex gap-4 items-center">
-          <button className="px-4 py-2 border border-outline-variant text-on-surface-variant rounded-md text-sm hover:bg-surface-container transition-colors shadow-sm">
-            Support
-          </button>
-          <button className="px-4 py-2 bg-primary text-on-primary rounded-md text-sm hover:opacity-90 transition-opacity shadow-sm">
-            Security
-          </button>
+          {isLogin && (
+            <>
+              <button className="px-4 py-2 border border-outline-variant text-on-surface-variant rounded-md text-sm hover:bg-surface-container transition-colors shadow-sm">
+                Support
+              </button>
+              <button className="px-4 py-2 bg-primary text-on-primary rounded-md text-sm hover:opacity-90 transition-opacity shadow-sm">
+                Security
+              </button>
+            </>
+          )}
         </div>
       </header>
 
       <main className="flex-grow flex flex-col md:flex-row relative z-10 h-screen">
         {/* Left - Visual Hero (Hidden on small screens to save space) */}
         <section className="hidden md:flex w-full md:w-[55%] lg:w-[60%] relative items-center justify-center overflow-hidden">
-          <div className="w-full h-full max-w-3xl flex flex-col items-center justify-center relative">
+          {/* Subtle Grid Background */}
+          <div className="absolute inset-0 opacity-[0.15]" style={{ backgroundImage: 'radial-gradient(circle at 2px 2px, var(--color-primary, #6b4f4f) 1px, transparent 0)', backgroundSize: '32px 32px' }}></div>
+          
+          {/* Asset Tracking Radar Animation */}
+          <div className="absolute right-[-10%] top-[20%] w-[600px] h-[600px] rounded-full border border-primary/10 animate-[ping_4s_cubic-bezier(0,0,0.2,1)_infinite]"></div>
+          <div className="absolute right-[-5%] top-[25%] w-[450px] h-[450px] rounded-full border border-primary/20 animate-[ping_4s_cubic-bezier(0,0,0.2,1)_infinite_1s]"></div>
+          
+          <div className="w-full h-full max-w-4xl flex flex-col items-start justify-center relative px-12 lg:px-20 z-10">
             
-            {/* Attractive Marketing Quote added here */}
-            <div className="z-10 px-8 max-w-lg text-center md:text-left absolute left-[10%] top-[30%] animate-subtle-fade-in">
-              <div className="inline-block px-3 py-1 mb-5 rounded-full bg-primary/10 border border-primary/20 text-primary text-[10px] font-bold tracking-widest uppercase shadow-sm">
+            {/* Attractive Marketing Quote */}
+            <div className="z-20 max-w-lg text-left animate-subtle-fade-in mb-10">
+              <div className="inline-flex items-center gap-2 px-3 py-1 mb-6 rounded-full bg-primary/10 border border-primary/20 text-primary text-[10px] font-bold tracking-widest uppercase shadow-sm">
+                <span className="w-2 h-2 rounded-full bg-tertiary animate-pulse"></span>
                 Next-Gen Workspace
               </div>
-              <h2 className="font-display text-4xl md:text-5xl font-extrabold text-primary leading-tight mb-5 tracking-tight" style={{ textShadow: '0 4px 24px rgba(107, 79, 79, 0.15)' }}>
+              <h2 className="font-display text-4xl md:text-5xl lg:text-6xl font-extrabold text-primary leading-tight mb-6 tracking-tight drop-shadow-sm">
                 Intelligent Tracking.<br/>Unmatched Clarity.
               </h2>
-              <p className="font-body-lg text-on-surface-variant leading-relaxed border-l-[3px] border-primary pl-5 opacity-90">
+              <p className="font-body-lg text-on-surface-variant leading-relaxed border-l-[3px] border-primary pl-5 opacity-90 backdrop-blur-[2px] bg-background/40 py-3 pr-4 rounded-r-lg">
                 Empower your organization with real-time visibility, automated lifecycle management, and military-grade security. 
                 Experience a new standard of operational excellence.
               </p>
             </div>
 
-            <div className="w-full h-[600px] relative">
-              {/* Floating Cards */}
-              <div className="absolute top-[10%] right-[15%] glass-card p-6 rounded-xl animate-[bounce_4s_infinite]">
-                <div className="flex items-center gap-3">
-                  <span className="material-symbols-outlined text-secondary text-3xl">database</span>
-                  <div className="flex flex-col">
-                    <span className="text-xs text-on-surface-variant font-medium">Total Assets</span>
-                    <span className="text-xl font-bold text-primary">24,801</span>
-                  </div>
+            {/* Floating Cards - Repositioned to avoid overlap */}
+            {/* Top Right Card */}
+            <div className="absolute top-[15%] right-[5%] glass-card p-5 rounded-xl animate-[bounce_4s_infinite] shadow-lg backdrop-blur-md bg-surface-container/90 border border-outline-variant/30 z-20 hover:scale-105 transition-transform cursor-default">
+              <div className="flex items-center gap-4">
+                <div className="p-3 bg-secondary/10 rounded-lg">
+                  <span className="material-symbols-outlined text-secondary text-2xl">database</span>
                 </div>
-              </div>
-              <div className="absolute bottom-[20%] left-[25%] glass-card p-6 rounded-xl animate-[bounce_5s_infinite_1s]">
-                <div className="flex items-center gap-3">
-                  <span className="material-symbols-outlined text-tertiary text-3xl">check_circle</span>
-                  <div className="flex flex-col">
-                    <span className="text-xs text-on-surface-variant font-medium">System Uptime</span>
-                    <span className="text-xl font-bold text-tertiary">99.9%</span>
-                  </div>
-                </div>
-              </div>
-              <div className="absolute bottom-[10%] right-[10%] glass-card p-4 rounded-lg hidden lg:flex items-center gap-3 animate-pulse">
-                <span className="material-symbols-outlined text-error">build</span>
                 <div className="flex flex-col">
-                  <span className="text-xs text-on-surface-variant font-medium">Active Maintenance</span>
-                  <span className="text-sm font-bold text-on-surface">12 Nodes</span>
+                  <span className="text-xs text-on-surface-variant font-bold uppercase tracking-widest">Total Assets</span>
+                  <span className="text-2xl font-black text-primary">24,801</span>
                 </div>
               </div>
             </div>
+
+            {/* Bottom Left Card - Safely tucked away from text */}
+            <div className="absolute bottom-[8%] left-[5%] lg:left-[15%] glass-card p-4 rounded-xl animate-[bounce_5s_infinite_1s] shadow-lg backdrop-blur-md bg-surface-container/90 border border-outline-variant/30 z-20 hover:scale-105 transition-transform cursor-default">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-tertiary/10 rounded-full">
+                  <span className="material-symbols-outlined text-tertiary text-xl">check_circle</span>
+                </div>
+                <div className="flex flex-col">
+                  <span className="text-[10px] text-on-surface-variant font-bold uppercase tracking-widest">System Uptime</span>
+                  <span className="text-xl font-extrabold text-tertiary">99.9%</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Bottom Right Card */}
+            <div className="absolute bottom-[10%] right-[15%] glass-card p-4 rounded-xl hidden lg:flex items-center gap-4 animate-pulse shadow-lg backdrop-blur-md bg-surface-container/90 border border-outline-variant/30 z-20 hover:scale-105 transition-transform cursor-default">
+              <div className="p-2 bg-error/10 rounded-full">
+                <span className="material-symbols-outlined text-error text-xl">build</span>
+              </div>
+              <div className="flex flex-col">
+                <span className="text-[10px] text-on-surface-variant font-bold uppercase tracking-widest">Active Maintenance</span>
+                <span className="text-lg font-extrabold text-on-surface">12 Nodes</span>
+              </div>
+            </div>
+
           </div>
         </section>
 
@@ -212,20 +263,22 @@ void main() {
           <div className="max-w-sm lg:max-w-md w-full mx-auto flex flex-col gap-6 animate-subtle-fade-in">
             <header className="flex flex-col gap-1.5 text-center md:text-left">
               <h1 className="text-2xl md:text-3xl font-bold text-primary transition-all duration-300">
-                {isLogin ? 'Manage your assets.' : 'Join AssetFlow.'}
+                {isForgotPassword ? 'Reset Password' : (isLogin ? 'Manage your assets.' : 'Join AssetFlow.')}
               </h1>
               <p className="text-sm text-on-surface-variant">
-                {isLogin ? 'Log in to your enterprise workspace.' : 'Create your enterprise-grade workspace.'}
+                {isForgotPassword ? 'Enter your email to receive a password reset link.' : (isLogin ? 'Log in to your enterprise workspace.' : 'Create your enterprise-grade workspace.')}
               </p>
             </header>
 
             <form className="flex flex-col gap-4" onSubmit={handleSubmit}>
-              <div className="flex justify-center md:justify-start mb-2">
-                <div className="bg-surface-container rounded-lg p-1 flex">
-                  <button type="button" onClick={() => { setIsLogin(true); setBtnText('Continue'); setErrorMsg(''); }} className={`px-6 py-1.5 text-sm font-medium rounded-md transition-all duration-300 ${isLogin ? 'bg-primary text-on-primary shadow-md transform scale-105' : 'text-on-surface-variant hover:text-on-surface'}`}>Sign In</button>
-                  <button type="button" onClick={() => { setIsLogin(false); setBtnText('Register'); setErrorMsg(''); }} className={`px-6 py-1.5 text-sm font-medium rounded-md transition-all duration-300 ${!isLogin ? 'bg-primary text-on-primary shadow-md transform scale-105' : 'text-on-surface-variant hover:text-on-surface'}`}>Sign Up</button>
+              {!isForgotPassword && (
+                <div className="flex justify-center md:justify-start mb-2">
+                  <div className="bg-surface-container rounded-lg p-1 flex">
+                    <button type="button" onClick={() => { setIsLogin(true); setBtnText('Continue'); setErrorMsg(''); }} className={`px-6 py-1.5 text-sm font-medium rounded-md transition-all duration-300 ${isLogin ? 'bg-primary text-on-primary shadow-md transform scale-105' : 'text-on-surface-variant hover:text-on-surface'}`}>Sign In</button>
+                    <button type="button" onClick={() => { setIsLogin(false); setBtnText('Register'); setErrorMsg(''); }} className={`px-6 py-1.5 text-sm font-medium rounded-md transition-all duration-300 ${!isLogin ? 'bg-primary text-on-primary shadow-md transform scale-105' : 'text-on-surface-variant hover:text-on-surface'}`}>Sign Up</button>
+                  </div>
                 </div>
-              </div>
+              )}
               
               {errorMsg && (
                 <div className="bg-error/10 text-error px-4 py-2 rounded-lg text-sm border border-error/20 transition-all">
@@ -233,11 +286,11 @@ void main() {
                 </div>
               )}
 
-              <div className={`flex flex-col gap-3 transition-all duration-500 ease-in-out overflow-hidden ${isLogin ? 'max-h-[160px]' : 'max-h-[250px]'}`}>
-                <div className={`flex flex-col gap-1 transition-all duration-500 ${isLogin ? 'opacity-0 translate-y-[-10px] hidden' : 'opacity-100 translate-y-0'}`}>
+              <div className={`flex flex-col gap-3 transition-all duration-500 ease-in-out overflow-hidden ${isForgotPassword ? 'max-h-[80px]' : (isLogin ? 'max-h-[160px]' : 'max-h-[400px]')}`}>
+                <div className={`flex flex-col gap-1 transition-all duration-500 ${(isLogin || isForgotPassword) ? 'opacity-0 translate-y-[-10px] hidden' : 'opacity-100 translate-y-0'}`}>
                   <label className="text-xs font-medium text-on-surface ml-1" htmlFor="name">Full Name</label>
                   <div className="relative border border-outline-variant rounded-lg overflow-hidden bg-background">
-                    <input value={name} onChange={(e) => setName(e.target.value)} required={!isLogin} className="w-full px-4 py-2 bg-transparent border-none focus:outline-none focus:ring-1 focus:ring-secondary text-on-surface placeholder:text-outline-variant text-sm transition-all" id="name" placeholder="John Doe" type="text" />
+                    <input value={name} onChange={(e) => setName(e.target.value)} required={!isLogin && !isForgotPassword} className="w-full px-4 py-2 bg-transparent border-none focus:outline-none focus:ring-1 focus:ring-secondary text-on-surface placeholder:text-outline-variant text-sm transition-all" id="name" placeholder="John Doe" type="text" />
                   </div>
                 </div>
 
@@ -248,18 +301,32 @@ void main() {
                   </div>
                 </div>
 
-                <div className="flex flex-col gap-1">
+                <div className={`flex flex-col gap-1 transition-all duration-500 ${(isLogin || isForgotPassword) ? 'opacity-0 translate-y-[-10px] hidden' : 'opacity-100 translate-y-0'}`}>
+                  <label className="text-xs font-medium text-on-surface ml-1" htmlFor="phone">Phone</label>
+                  <div className="relative border border-outline-variant rounded-lg overflow-hidden bg-background">
+                    <input value={phone} onChange={(e) => setPhone(e.target.value)} required={!isLogin && !isForgotPassword} className="w-full px-4 py-2 bg-transparent border-none focus:outline-none focus:ring-1 focus:ring-secondary text-on-surface placeholder:text-outline-variant text-sm transition-all" id="phone" placeholder="+1 (555) 000-0000" type="tel" />
+                  </div>
+                </div>
+
+                <div className={`flex flex-col gap-1 transition-all duration-500 ${isForgotPassword ? 'opacity-0 translate-y-[10px] hidden' : 'opacity-100 translate-y-0'}`}>
                   <div className="flex justify-between items-center ml-1">
                     <label className="text-xs font-medium text-on-surface" htmlFor="password">Password</label>
-                    {isLogin && <a className="text-[10px] text-secondary hover:underline transition-all" href="#">Forgot Password?</a>}
+                    {isLogin && <button type="button" onClick={() => { setIsForgotPassword(true); setBtnText('Send Reset Link'); setErrorMsg(''); }} className="text-[10px] text-secondary hover:underline transition-all">Forgot Password?</button>}
                   </div>
                   <div className="relative border border-outline-variant rounded-lg overflow-hidden bg-background">
-                    <input value={password} onChange={(e) => setPassword(e.target.value)} required className="w-full px-4 py-2 bg-transparent border-none focus:outline-none focus:ring-1 focus:ring-secondary text-on-surface placeholder:text-outline-variant text-sm transition-all" id="password" placeholder="••••••••" type="password" />
+                    <input value={password} onChange={(e) => setPassword(e.target.value)} required={!isForgotPassword} className="w-full px-4 py-2 bg-transparent border-none focus:outline-none focus:ring-1 focus:ring-secondary text-on-surface placeholder:text-outline-variant text-sm transition-all" id="password" placeholder="••••••••" type="password" />
+                  </div>
+                </div>
+
+                <div className={`flex flex-col gap-1 transition-all duration-500 ${(isLogin || isForgotPassword) ? 'opacity-0 translate-y-[10px] hidden' : 'opacity-100 translate-y-0'}`}>
+                  <label className="text-xs font-medium text-on-surface ml-1" htmlFor="confirmPassword">Confirm Password</label>
+                  <div className="relative border border-outline-variant rounded-lg overflow-hidden bg-background">
+                    <input value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} required={!isLogin && !isForgotPassword} className="w-full px-4 py-2 bg-transparent border-none focus:outline-none focus:ring-1 focus:ring-secondary text-on-surface placeholder:text-outline-variant text-sm transition-all" id="confirmPassword" placeholder="••••••••" type="password" />
                   </div>
                 </div>
               </div>
 
-              {isLogin && (
+              {isLogin && !isForgotPassword && (
                 <div className="flex items-center gap-2 mt-1 animate-subtle-fade-in">
                   <input className="w-4 h-4 rounded-[4px] border-outline-variant text-primary focus:ring-secondary transition-all cursor-pointer" id="remember" type="checkbox" />
                   <label className="text-xs text-on-surface-variant cursor-pointer hover:text-on-surface transition-colors" htmlFor="remember">Remember me for 30 days</label>
@@ -269,18 +336,28 @@ void main() {
               <button type="submit" className="w-full bg-primary text-on-primary py-2.5 rounded-lg text-sm font-medium hover:opacity-90 active:scale-[0.98] transition-all duration-300 mt-2 shadow-md hover:shadow-lg hover:-translate-y-0.5">
                 {btnText}
               </button>
+
+              {isForgotPassword && (
+                <button type="button" onClick={() => { setIsForgotPassword(false); setBtnText('Continue'); setErrorMsg(''); }} className="text-xs text-secondary hover:underline mt-2 text-center w-full">
+                  Back to Login
+                </button>
+              )}
             </form>
 
-            <div className="flex items-center gap-4 my-1">
-              <div className="h-[1px] flex-grow bg-outline-variant/30"></div>
-              <span className="text-[10px] text-outline uppercase tracking-widest font-medium">Enterprise SSO</span>
-              <div className="h-[1px] flex-grow bg-outline-variant/30"></div>
-            </div>
+            {!isForgotPassword && (
+              <>
+                <div className="flex items-center gap-4 my-1">
+                  <div className="h-[1px] flex-grow bg-outline-variant/30"></div>
+                  <span className="text-[10px] text-outline uppercase tracking-widest font-medium">Enterprise SSO</span>
+                  <div className="h-[1px] flex-grow bg-outline-variant/30"></div>
+                </div>
 
-            <button className="w-full border border-outline-variant py-2 rounded-lg text-sm font-medium text-on-surface-variant flex items-center justify-center gap-2 hover:bg-surface-container hover:text-on-surface transition-all duration-300 active:scale-[0.98]">
-              <span className="material-symbols-outlined text-base">identity_platform</span>
-              Log in with Okta
-            </button>
+                <button className="w-full border border-outline-variant py-2 rounded-lg text-sm font-medium text-on-surface-variant flex items-center justify-center gap-2 hover:bg-surface-container hover:text-on-surface transition-all duration-300 active:scale-[0.98]">
+                  <span className="material-symbols-outlined text-base">identity_platform</span>
+                  Log in with Okta
+                </button>
+              </>
+            )}
 
             <footer className="flex justify-between items-center pt-4 border-t border-outline-variant/20 mt-2">
               <div className="flex items-center gap-1.5">
