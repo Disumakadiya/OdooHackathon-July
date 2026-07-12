@@ -1,7 +1,9 @@
 import { useState, useEffect } from 'react';
+import { useAuth } from '../../context/AuthContext';
 import Sidebar from '../../components/Sidebar';
 
 export default function assetflow_organization_settings() {
+  const { logout } = useAuth();
   const [activeTab, setActiveTab] = useState('profile');
   useEffect(() => { document.title = 'AssetFlow | Organization Settings'; }, []);
 
@@ -115,6 +117,18 @@ export default function assetflow_organization_settings() {
                       </div>
                     </div>
                   </div>
+                </div>
+                
+                {/* Logout Section */}
+                <div className="pt-xl mt-lg border-t border-outline-variant/30 flex justify-between items-center">
+                  <div>
+                    <h3 className="font-headline-md text-headline-md text-error mb-xs">Sign Out</h3>
+                    <p className="text-sm text-on-surface-variant">Securely end your current session.</p>
+                  </div>
+                  <button onClick={() => logout()} className="flex items-center gap-2 px-6 py-2.5 border border-error text-error rounded-lg hover:bg-error/10 transition-colors font-medium text-sm">
+                    <span className="material-symbols-outlined text-xl">logout</span>
+                    Sign Out
+                  </button>
                 </div>
               </section>
             )}

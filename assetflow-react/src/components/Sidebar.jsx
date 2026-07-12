@@ -27,7 +27,6 @@ export default function Sidebar() {
 
   const handleLogout = () => {
     logout();
-    navigate('/login');
   };
 
   const filteredNavItems = navItems.filter(item => {
