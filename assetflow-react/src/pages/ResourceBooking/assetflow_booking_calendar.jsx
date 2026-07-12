@@ -1,21 +1,46 @@
 import { useState, useEffect } from 'react';
 import Sidebar from '../../components/Sidebar';
+import { getBookings } from '../../services/bookingService';
+import { getNotifications } from '../../services/notificationService';
+
 
 export default function assetflow_booking_calendar() {
   const [toastVisible, setToastVisible] = useState(false);
+  const [bookings, setBookings] = useState([]);
+  const [notifications, setNotifications] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [errorMessage, setErrorMessage] = useState('');
 
   useEffect(() => {
     document.title = 'AssetFlow | Resource Booking Calendar';
+    loadDashboardData();
   }, []);
+
+  const loadDashboardData = async () => {
+    setLoading(true);
+    setErrorMessage('');
+
+    try {
+      const [bookingData, notificationData] = await Promise.all([getBookings(), getNotifications()]);
+      setBookings(Array.isArray(bookingData) ? bookingData : []);
+      setNotifications(Array.isArray(notificationData) ? notificationData : []);
+    } catch (error) {
+      setErrorMessage(error?.response?.data?.message || error?.message || 'Unable to load reservation data right now.');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleFabClick = () => {
     setToastVisible(true);
     setTimeout(() => setToastVisible(false), 3000);
   };
 
+  const upcomingBooking = bookings[0];
+  const pendingNotifications = notifications.slice(0, 2);
+
   return (
     <div className="font-body-md text-body-md overflow-x-hidden">
-      {/* TopNavBar */}
       <nav className="sticky top-0 z-40 flex justify-between items-center w-full px-lg py-sm bg-surface border-b border-outline-variant max-w-full">
         <div className="flex items-center gap-md">
           <span className="text-headline-md font-headline-md font-bold text-primary">AssetFlow</span>
@@ -39,7 +64,6 @@ export default function assetflow_booking_calendar() {
         <Sidebar />
 
         <main className="flex-1 md:ml-64 p-lg max-w-max-width mx-auto">
-          {/* Page Header */}
           <header className="mb-xl flex flex-col md:flex-row md:items-end justify-between gap-md">
             <div>
               <h1 className="font-headline-lg text-headline-lg text-primary tracking-tight mb-sm">Resource Booking</h1>
@@ -56,9 +80,13 @@ export default function assetflow_booking_calendar() {
             </div>
           </header>
 
-          {/* Calendar Layout */}
+          {(loading || errorMessage) && (
+            <div className={`mb-lg rounded-lg border px-md py-sm text-label-sm ${errorMessage ? 'border-error/20 bg-error/5 text-error' : 'border-primary/20 bg-primary/5 text-primary'}`}>
+              {loading ? 'Loading resource bookings from the backend…' : errorMessage}
+            </div>
+          )}
+
           <div className="grid grid-cols-12 gap-lg">
-            {/* Sidebar */}
             <div className="col-span-12 lg:col-span-3 space-y-lg">
               <div className="bg-white p-lg rounded-xl custom-shadow border border-outline-variant/30">
                 <h3 className="font-headline-md text-label-md text-primary mb-md">Select Resources</h3>
@@ -94,7 +122,6 @@ export default function assetflow_booking_calendar() {
                 </div>
               </div>
 
-              {/* Mini Calendar */}
               <div className="bg-white p-lg rounded-xl custom-shadow border border-outline-variant/30">
                 <div className="flex justify-between items-center mb-md">
                   <span className="font-label-md text-primary">October 2024</span>
@@ -113,12 +140,11 @@ export default function assetflow_booking_calendar() {
               </div>
             </div>
 
-            {/* Main Calendar */}
             <div className="col-span-12 lg:col-span-9 bg-white rounded-xl custom-shadow border border-outline-variant/30 overflow-hidden flex flex-col">
               <div className="p-lg border-b border-outline-variant/30 flex items-center justify-between">
                 <div className="flex items-center gap-md">
                   <h2 className="font-headline-md text-primary">Weekly Schedule</h2>
-                  <span className="text-on-surface-variant font-body-md">Oct 7 – Oct 13, 2024</span>
+                  <span className="text-on-surface-variant font-body-md">Live booking overview</span>
                 </div>
                 <div className="flex items-center gap-sm">
                   <button className="p-2 hover:bg-surface-container rounded-full transition-all"><span className="material-symbols-outlined">print</span></button>
@@ -127,7 +153,6 @@ export default function assetflow_booking_calendar() {
               </div>
               <div className="overflow-x-auto">
                 <div className="min-w-[800px]">
-                  {/* Grid Header */}
                   <div className="grid grid-cols-8 border-b border-outline-variant/30">
                     <div className="p-md text-label-sm text-outline border-r border-outline-variant/30 bg-surface-container-low">Time</div>
                     {[{d:'Mon',n:'7'},{d:'Tue',n:'8',active:true},{d:'Wed',n:'9'},{d:'Thu',n:'10'},{d:'Fri',n:'11'},{d:'Sat',n:'12'},{d:'Sun',n:'13'}].map((day, i) => (
@@ -137,43 +162,22 @@ export default function assetflow_booking_calendar() {
                       </div>
                     ))}
                   </div>
-                  {/* Grid Body */}
                   <div className="relative h-[600px] overflow-y-auto no-scrollbar">
                     <div className="absolute inset-0 grid grid-cols-8 grid-rows-[repeat(12,minmax(80px,1fr))] pointer-events-none">
-                      {['08:00','09:00','10:00','11:00','12:00','13:00','14:00','15:00'].map((time, i) => (
-                        <>
-                          <div key={`t-${i}`} className="border-r border-outline-variant/30 border-b border-outline-variant/10 flex items-start justify-end pr-md pt-base text-label-sm text-outline">{time}</div>
-                          {[0,1,2,3,4,5,6].map(j => <div key={`${i}-${j}`} className={`border-r border-outline-variant/30 border-b border-outline-variant/10 ${j === 6 ? 'border-r-0' : ''}`}></div>)}
-                        </>
+                      {['08:00','09:00','10:00','11:00','12:00','13:00','14:00','15:00'].map((time) => (
+                        <div key={time} className="contents">
+                          <div className="border-r border-outline-variant/30 border-b border-outline-variant/10 flex items-start justify-end pr-md pt-base text-label-sm text-outline">{time}</div>
+                          {[0,1,2,3,4,5,6].map((j) => <div key={`${time}-${j}`} className={`border-r border-outline-variant/30 border-b border-outline-variant/10 ${j === 6 ? 'border-r-0' : ''}`}></div>)}
+                        </div>
                       ))}
                     </div>
-                    {/* Bookings */}
-                    <div className="absolute inset-0 grid grid-cols-8 grid-rows-[repeat(12,minmax(80px,1fr))] p-0 pointer-events-none">
-                      <div className="col-start-1 col-span-1"></div>
-                      <div className="col-start-2 row-start-2 row-span-2 p-1 pointer-events-auto">
-                        <div className="bg-primary/10 border-l-4 border-primary h-full p-2 rounded-r-lg cursor-pointer hover:bg-primary/20 transition-all">
-                          <p className="text-label-sm font-bold text-primary">Conf Room A</p>
-                          <p className="text-[10px] text-primary/70">Strategic Planning</p>
+                    <div className="absolute inset-0 p-2">
+                      {bookings.slice(0, 3).map((booking, index) => (
+                        <div key={booking.id || index} className={`mb-sm rounded-r-lg p-2 ${index % 2 === 0 ? 'bg-primary/10 border-l-4 border-primary' : 'bg-secondary/10 border-l-4 border-secondary'}`}>
+                          <p className={`text-label-sm font-bold ${index % 2 === 0 ? 'text-primary' : 'text-secondary'}`}>{booking.purpose || 'Reserved Asset'}</p>
+                          <p className={`text-[10px] ${index % 2 === 0 ? 'text-primary/70' : 'text-secondary/70'}`}>{new Date(booking.start_time).toLocaleString()}</p>
                         </div>
-                      </div>
-                      <div className="col-start-3 row-start-4 row-span-4 p-1 pointer-events-auto mt-10">
-                        <div className="bg-secondary/10 border-l-4 border-secondary h-full p-2 rounded-r-lg cursor-pointer hover:bg-secondary/20 transition-all">
-                          <p className="text-label-sm font-bold text-secondary">Tesla Model 3</p>
-                          <p className="text-[10px] text-secondary/70">Client Site Visit</p>
-                        </div>
-                      </div>
-                      <div className="col-start-5 row-start-2 row-span-3 p-1 pointer-events-auto">
-                        <div className="bg-primary/10 border-l-4 border-primary h-full p-2 rounded-r-lg cursor-pointer hover:bg-primary/20 transition-all">
-                          <p className="text-label-sm font-bold text-primary">Executive Suite</p>
-                          <p className="text-[10px] text-primary/70">Board Review</p>
-                        </div>
-                      </div>
-                      <div className="col-start-6 row-start-3 row-span-2 p-1 pointer-events-auto">
-                        <div className="bg-secondary/10 border-l-4 border-secondary h-full p-2 rounded-r-lg cursor-pointer hover:bg-secondary/20 transition-all">
-                          <p className="text-label-sm font-bold text-secondary">Ford Transit</p>
-                          <p className="text-[10px] text-secondary/70">Equip. Delivery</p>
-                        </div>
-                      </div>
+                      ))}
                     </div>
                   </div>
                 </div>
@@ -181,7 +185,6 @@ export default function assetflow_booking_calendar() {
             </div>
           </div>
 
-          {/* Activity Section */}
           <section className="mt-xl grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-lg pb-xl">
             <div className="bg-white p-lg rounded-xl custom-shadow border border-outline-variant/30 flex flex-col justify-between">
               <div>
@@ -189,8 +192,10 @@ export default function assetflow_booking_calendar() {
                 <div className="flex items-center gap-md p-md bg-surface-container-low rounded-lg mb-md">
                   <span className="material-symbols-outlined text-secondary" style={{ fontVariationSettings: "'FILL' 1" }}>directions_car</span>
                   <div>
-                    <p className="text-label-md font-bold text-on-surface">Tesla Model X</p>
-                    <p className="text-label-sm text-on-surface-variant">Starts in 45 mins • Dock B</p>
+                    <p className="text-label-md font-bold text-on-surface">{upcomingBooking ? (upcomingBooking.purpose || 'Reserved asset') : 'No upcoming bookings'}</p>
+                    <p className="text-label-sm text-on-surface-variant">
+                      {upcomingBooking ? `${new Date(upcomingBooking.start_time).toLocaleString()} • Asset ${upcomingBooking.asset_id}` : 'Your next reservation will appear here.'}
+                    </p>
                   </div>
                 </div>
               </div>
@@ -216,36 +221,32 @@ export default function assetflow_booking_calendar() {
             <div className="bg-white p-lg rounded-xl custom-shadow border border-outline-variant/30 col-span-1 md:col-span-2 lg:col-span-1">
               <h3 className="font-headline-md text-label-md text-primary mb-md">Pending Requests</h3>
               <div className="space-y-md">
-                {[{ name: 'Jordan S.', equip: '4K Drone' }, { name: 'Elena R.', equip: 'Honda E' }].map((req, i) => (
-                  <div key={i} className="flex items-center justify-between group">
+                {pendingNotifications.length > 0 ? pendingNotifications.map((req, i) => (
+                  <div key={req.id || i} className="flex items-center justify-between group">
                     <div className="flex items-center gap-md">
                       <div className="w-10 h-10 rounded-full bg-surface-container flex items-center justify-center">
                         <span className="material-symbols-outlined text-outline">person</span>
                       </div>
                       <div>
-                        <p className="text-label-md font-bold text-on-surface">{req.name}</p>
-                        <p className="text-label-sm text-on-surface-variant">Equipment: {req.equip}</p>
+                        <p className="text-label-md font-bold text-on-surface">{req.title || 'Notification'}</p>
+                        <p className="text-label-sm text-on-surface-variant">{req.message || 'Backend update available.'}</p>
                       </div>
                     </div>
-                    <div className="flex gap-sm opacity-0 group-hover:opacity-100 transition-opacity">
-                      <button className="p-1 text-secondary hover:bg-secondary/10 rounded"><span className="material-symbols-outlined">check_circle</span></button>
-                      <button className="p-1 text-error hover:bg-error/10 rounded"><span className="material-symbols-outlined">cancel</span></button>
-                    </div>
                   </div>
-                ))}
+                )) : (
+                  <div className="text-label-sm text-on-surface-variant">No pending requests right now.</div>
+                )}
               </div>
             </div>
           </section>
         </main>
       </div>
 
-      {/* FAB */}
       <button onClick={handleFabClick} className="fixed bottom-lg right-lg bg-primary text-white flex items-center gap-md px-lg py-md rounded-full shadow-xl hover:scale-105 active:scale-95 transition-all z-50 group">
         <span className="material-symbols-outlined group-hover:rotate-90 transition-transform">add</span>
         <span className="font-label-md font-bold">Create Booking</span>
       </button>
 
-      {/* Toast */}
       <div className={`fixed bottom-lg left-1/2 -translate-x-1/2 bg-on-surface text-surface px-lg py-md rounded-xl shadow-2xl flex items-center gap-md z-[60] transition-all duration-300 ${toastVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10 pointer-events-none'}`}>
         <span className="material-symbols-outlined text-secondary">check_circle</span>
         <span className="font-label-md">New booking successfully created</span>
