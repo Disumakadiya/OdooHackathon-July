@@ -1,11 +1,15 @@
+# ==============================
+# Root .gitignore (AssetFlow)
+# ==============================
+
 # Dependencies
 node_modules/
 **/node_modules/
 
 # Build outputs
-/dist/
-/build/
-/coverage/
+dist/
+build/
+coverage/
 **/dist/
 **/build/
 **/coverage/
@@ -13,6 +17,7 @@ node_modules/
 # Environment files
 .env
 .env.*
+
 # Logs
 npm-debug.log*
 yarn-debug.log*
@@ -25,3 +30,8 @@ pnpm-debug.log*
 .vscode/
 .idea/
 *.swp
+
+# Temporary files
+*.tmp
+*.temp
+
