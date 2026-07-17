@@ -66,7 +66,7 @@ AssetFlow aims to simplify enterprise asset management by providing a scalable, 
 
 ```bash
 OdooHackathon-July/
-├── assetflow-react/       # Frontend React application (Vite)
+├── client/                # Frontend React application (Vite)
 ├── backend/               # Backend Node.js/Express application
 └── README.md              # Project documentation
 ```
@@ -81,7 +81,7 @@ Follow these steps to get a local copy up and running.
 
 1. Open a new terminal and navigate to the frontend directory:
    ```bash
-   cd assetflow-react
+   cd client
    ```
 2. Install the frontend dependencies:
    ```bash
