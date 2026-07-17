@@ -102,7 +102,13 @@ Follow these steps to get a local copy up and running.
    ```bash
    npm install
    ```
-3. Start the backend development server:
+3. Configure your Neon Database:
+   Create a `.env` file in the `backend` directory and add your Neon PostgreSQL connection string:
+   ```env
+   DATABASE_URL="postgres://<user>:<password>@<neon-hostname>/<dbname>?sslmode=require"
+   PORT=5000
+   ```
+4. Start the backend development server:
    ```bash
    npm run dev
    ```
