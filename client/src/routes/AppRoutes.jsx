@@ -23,15 +23,16 @@ import AssetflowDiscrepancyReport from "../pages/Audit/assetflow_discrepancy_rep
 import AssetflowReports from "../pages/Reports/assetflow_reports";
 import AssetflowAnalytics from "../pages/Reports/assetflow_analytics";
 import AssetflowNotifications from "../pages/Notifications/assetflow_notifications";
+import LandingPage from "../pages/Landing/LandingPage";
 
 export default function AppRoutes() {
   return (
     <Routes>
+      <Route path="/" element={<LandingPage />} />
       <Route path="/login" element={<AssetflowEnterpriseAuthentication />} />
       
       {/* Base protected routes (accessible to authenticated users) */}
       <Route element={<ProtectedRoute />}>
-        <Route path="/" element={<AssetflowAdminDashboard />} />
         <Route path="/dashboard" element={<AssetflowAdminDashboard />} />
         <Route path="/audit" element={<AssetflowAuditDashboard />} />
         <Route path="/assets" element={<AssetflowAssetVerification />} />
