@@ -1,75 +1,56 @@
 import { useEffect, useMemo, useState } from "react";
+import { assetVerificationData } from "../../assets/assetVerificationData";
 import Button from "../../components/Button";
 import Card from "../../components/Card";
 import Modal from "../../components/Modal";
 import SearchBar from "../../components/SearchBar";
+import Sidebar from "../../components/Sidebar";
 import StatusBadge from "../../components/StatusBadge";
 import Table from "../../components/Table";
 import AssetActionMenu from "../../components/AssetActionMenu";
 import AssetDetailDrawer from "../../components/AssetDetailDrawer";
-import { useAssets } from "../../context/AssetContext";
 
+const categoryOptions = ["All", "IT Equipment", "Furniture", "Vehicles", "Industrial Tools", "Office Equipment"];
 const statusOptions = ["All", "Available", "Allocated", "Reserved", "Under Maintenance", "Lost", "Retired", "Disposed"];
-const departmentOptions = ["All", "IT", "HR", "Finance", "Operations", "Sales"];
-const locationOptions = ["All", "Head Office", "HQ-IT", "HQ-Sales", "Warehouse A", "Warehouse B", "Branch Office", "Repair Center"];
-const conditionOptions = ["Good", "Fair", "Damaged"];
+const departmentOptions = ["All", "IT", "HR", "Finance", "Operations"];
+const locationOptions = ["All", "Head Office", "Warehouse A", "Warehouse B", "Branch Office"];
 
-const emptyForm = {
+const initialForm = {
+  assetTag: "",
   name: "",
   serialNumber: "",
   qrCode: "",
-  category: "",
+  category: "IT Equipment",
   status: "Available",
-  department: "",
-  location: "",
+  department: "IT",
+  location: "Head Office",
   assignedEmployee: "",
+  lastUpdated: "Jul 12, 2026",
   condition: "Good",
   description: "",
 };
 
-export default function AssetflowAssetVerification() {
-  const { assets, loading, error, addAsset, editAsset, removeAsset, allocate, transfer, doReturn } = useAssets();
+export default function assetflow_asset_verification() {
   const [search, setSearch] = useState("");
   const [filters, setFilters] = useState({ category: "All", status: "All", department: "All", location: "All" });
-
+  const [assets, setAssets] = useState(assetVerificationData);
   const [createOpen, setCreateOpen] = useState(false);
   const [viewOpen, setViewOpen] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
-  const [actionOpen, setActionOpen] = useState(false);
-
-  const [selectedAssetId, setSelectedAssetId] = useState(null);
-  const [form, setForm] = useState(emptyForm);
-  const [actionAssetId, setActionAssetId] = useState(null);
-  const [actionType, setActionType] = useState("");
-  const [actionValue, setActionValue] = useState("");
-  const [saving, setSaving] = useState(false);
-  const [formError, setFormError] = useState("");
+  const [selectedAsset, setSelectedAsset] = useState(null);
+  const [form, setForm] = useState(initialForm);
 
   useEffect(() => {
     document.title = "AssetFlow | Asset Verification";
   }, []);
-
-  const selectedAsset = useMemo(
-    () => (selectedAssetId ? assets.find((a) => a.id === selectedAssetId) || null : null),
-    [assets, selectedAssetId],
-  );
-  const actionAsset = useMemo(
-    () => (actionAssetId ? assets.find((a) => a.id === actionAssetId) || null : null),
-    [assets, actionAssetId],
-  );
-
-  const categoryOptions = useMemo(() => {
-    const fromData = [...new Set(assets.map((a) => a.category).filter(Boolean))];
-    return ["All", ...fromData.sort((a, b) => a.localeCompare(b))];
-  }, [assets]);
 
   const filteredAssets = useMemo(() => {
     const keyword = search.trim().toLowerCase();
     return assets.filter((asset) => {
       const matchesSearch =
         !keyword ||
-        [asset.assetTag, asset.name, asset.serialNumber, asset.qrCode, asset.assignedEmployee].join(" ").toLowerCase().includes(keyword);
+        [asset.assetTag, asset.name, asset.serialNumber, asset.qrCode].join(" ").toLowerCase().includes(keyword);
       const matchesCategory = filters.category === "All" || asset.category === filters.category;
       const matchesStatus = filters.status === "All" || asset.status === filters.status;
       const matchesDepartment = filters.department === "All" || asset.department === filters.department;
@@ -88,368 +69,351 @@ export default function AssetflowAssetVerification() {
     [assets],
   );
 
-  const openView = (asset) => {
-    setSelectedAssetId(asset.id);
-    setViewOpen(true);
-  };
-
   const openCreateModal = () => {
-    setForm({ ...emptyForm });
-    setFormError("");
+    setSelectedAsset(null);
+    setForm(initialForm);
     setCreateOpen(true);
   };
 
+  const openViewModal = (asset) => {
+    setSelectedAsset(asset);
+    setViewOpen(true);
+  };
+
   const openEditModal = (asset) => {
+    setSelectedAsset(asset);
     setForm({ ...asset });
-    setFormError("");
     setEditOpen(true);
   };
 
   const openDeleteModal = (asset) => {
-    setSelectedAssetId(asset.id);
-    setFormError("");
+    setSelectedAsset(asset);
     setDeleteOpen(true);
   };
 
-  const openAction = (asset, type) => {
-    setActionAssetId(asset.id);
-    setActionType(type);
-    setActionValue(type === "return" ? "Good" : "");
-    setFormError("");
-    setActionOpen(true);
+  const handleSaveAsset = () => {
+    const nextAsset = {
+      ...form,
+      id: selectedAsset?.id ?? `ASSET-${Date.now()}`,
+      allocationHistory: selectedAsset?.allocationHistory ?? [
+        { id: 1, action: "Registered in system", date: "Jul 12, 2026", details: "Dummy registration created from the verification screen." },
+      ],
+      maintenanceHistory: selectedAsset?.maintenanceHistory ?? [
+        { id: 1, action: "Initial setup", date: "Jul 12, 2026", status: "Completed", details: "No backend integration. Dummy data only." },
+      ],
+      stats: selectedAsset?.stats ?? { usageDays: 0, moves: 0, maintenance: 0, openIssues: 0 },
+    };
+
+    setAssets((current) => {
+      const existingIndex = current.findIndex((asset) => asset.id === nextAsset.id);
+      if (existingIndex >= 0) {
+        const updated = [...current];
+        updated[existingIndex] = nextAsset;
+        return updated;
+      }
+      return [nextAsset, ...current];
+    });
+
+    setCreateOpen(false);
+    setEditOpen(false);
+    setSelectedAsset(null);
+    setForm(initialForm);
   };
 
-  const saveForm = async () => {
-    if (!form.name.trim() || !form.category.trim() || !form.department.trim() || !form.location.trim()) {
-      setFormError("Asset name, category, department, and location are required.");
+  const handleDeleteAsset = () => {
+    setAssets((current) => current.filter((asset) => asset.id !== selectedAsset?.id));
+    setDeleteOpen(false);
+    setSelectedAsset(null);
+  };
+
+  const updateSelectedAsset = (status, actionLabel) => {
+    if (!selectedAsset) {
       return;
     }
-    setSaving(true);
-    setFormError("");
-    try {
-      if (form.id && assets.some((a) => a.id === form.id)) {
-        await editAsset(form.id, form);
-      } else {
-        await addAsset({ ...form, status: "Available" });
-      }
-      setCreateOpen(false);
-      setEditOpen(false);
-      setForm(emptyForm);
-    } catch (err) {
-      setFormError(err.message || "Failed to save asset");
-    } finally {
-      setSaving(false);
-    }
-  };
 
-  const confirmDelete = async () => {
-    if (!selectedAsset) return;
-    setSaving(true);
-    setFormError("");
-    try {
-      await removeAsset(selectedAsset.id);
-      setDeleteOpen(false);
-      setSelectedAssetId(null);
-    } catch (err) {
-      setFormError(err.message || "Failed to delete asset");
-    } finally {
-      setSaving(false);
-    }
-  };
+    const nextHistory = {
+      id: Date.now(),
+      action: actionLabel,
+      date: "Jul 12, 2026",
+      details: `Dummy ${actionLabel.toLowerCase()} recorded from Asset Verification.`,
+    };
 
-  const runAction = async () => {
-    if (!actionAsset) return;
-    setSaving(true);
-    setFormError("");
-    try {
-      if (actionType === "allocate") {
-        if (!actionValue.trim()) {
-          setFormError("An employee name is required to allocate the asset.");
-          return;
+    setAssets((current) =>
+      current.map((asset) => {
+        if (asset.id !== selectedAsset.id) {
+          return asset;
         }
-        await allocate(actionAsset.id, { assignedEmployee: actionValue });
-      } else if (actionType === "transfer") {
-        await transfer(actionAsset.id, { department: actionValue });
-      } else if (actionType === "return") {
-        await doReturn(actionAsset.id, { condition: actionValue || "Good" });
-      }
-      setActionOpen(false);
-      setActionAssetId(null);
-      setActionType("");
-    } catch (err) {
-      setFormError(err.message || "Action failed");
-    } finally {
-      setSaving(false);
-    }
+        return {
+          ...asset,
+          status,
+          lastUpdated: "Jul 12, 2026",
+          allocationHistory: [nextHistory, ...asset.allocationHistory],
+        };
+      }),
+    );
   };
 
-  const updateFormField = (field, value) => {
-    setForm((prev) => ({ ...prev, [field]: value }));
-    if (formError) setFormError("");
+  const handleTransferRequest = () => {
+    updateSelectedAsset("Reserved", "Transfer Request Raised");
   };
+
+  const columns = [
+    {
+      key: "assetTag",
+      label: "Asset Tag",
+      render: (asset) => (
+        <button className="font-bold text-primary hover:underline" onClick={() => openViewModal(asset)} type="button">
+          {asset.assetTag}
+        </button>
+      ),
+    },
+    { key: "name", label: "Name" },
+    { key: "category", label: "Category" },
+    { key: "status", label: "Status", render: (asset) => <StatusBadge status={asset.status} /> },
+    { key: "location", label: "Location" },
+    { key: "assignedEmployee", label: "Assigned Employee" },
+    { key: "lastUpdated", label: "Last Updated" },
+    {
+      key: "actions",
+      label: "Actions",
+      render: (asset) => (
+        <AssetActionMenu
+          onView={() => openViewModal(asset)}
+          onEdit={() => openEditModal(asset)}
+          onDelete={() => openDeleteModal(asset)}
+        />
+      ),
+    },
+  ];
 
   const modalField = "w-full rounded-lg border border-outline-variant bg-surface-container-low px-4 py-3 font-label-md text-label-md outline-none transition-colors focus:border-primary";
 
   return (
-    <div className="min-h-screen bg-surface-container-low px-4 py-6 text-on-surface sm:px-6 lg:px-8">
-      <div className="mx-auto max-w-7xl space-y-6">
-        <header className="flex flex-wrap items-end justify-between gap-4">
-          <div>
-            <h2 className="font-headline-lg text-headline-lg text-primary">Asset Verification</h2>
-            <p className="mt-xs font-label-md text-label-md text-on-surface-variant">Search, verify, and manage enterprise assets.</p>
+    <div className="font-body-md text-body-md">
+      <Sidebar />
+
+      <main className="min-h-screen md:ml-64">
+        <header className="sticky top-0 z-40 border-b border-outline-variant bg-surface/90 px-lg py-sm backdrop-blur">
+          <div className="flex flex-col gap-sm lg:flex-row lg:items-center lg:justify-between">
+            <div>
+              <h2 className="font-headline-lg text-headline-lg text-primary">Asset Verification</h2>
+              <p className="mt-xs font-label-md text-label-md text-on-surface-variant">Search, verify, and manage enterprise assets.</p>
+            </div>
+            <div className="flex items-center gap-sm">
+              <button className="inline-flex items-center justify-center rounded-lg border border-outline-variant bg-surface-container px-md py-sm font-label-md text-label-md text-primary transition-colors hover:bg-surface-container-high" type="button">
+                <span className="material-symbols-outlined mr-sm text-[18px]">qr_code_scanner</span>
+                Scan Asset
+              </button>
+              <Button onClick={openCreateModal}>
+                <span className="material-symbols-outlined mr-sm text-[18px]">add</span>
+                Register Asset
+              </Button>
+            </div>
           </div>
-          <Button onClick={openCreateModal}>
-            <span className="material-symbols-outlined mr-sm text-[18px]">add</span>
-            Register Asset
-          </Button>
         </header>
 
-        <section className="grid grid-cols-1 gap-md sm:grid-cols-2 xl:grid-cols-4">
-          <Card><p className="text-label-sm text-on-surface-variant">Total Categories</p><p className="mt-2 text-3xl font-bold text-primary">{summary.totalCategories}</p></Card>
-          <Card><p className="text-label-sm text-on-surface-variant">Total Assets</p><p className="mt-2 text-3xl font-bold text-primary">{summary.totalAssets}</p></Card>
-          <Card><p className="text-label-sm text-on-surface-variant">Active</p><p className="mt-2 text-3xl font-bold text-secondary">{summary.active}</p></Card>
-          <Card><p className="text-label-sm text-on-surface-variant">Inactive</p><p className="mt-2 text-3xl font-bold text-error">{summary.inactive}</p></Card>
-        </section>
+        <div className="mx-auto max-w-max-width space-y-xl p-lg pb-2xl">
+          <section className="grid grid-cols-1 gap-md sm:grid-cols-2 xl:grid-cols-4">
+            <Card><p className="text-label-sm text-on-surface-variant">Total Categories</p><p className="mt-2 text-3xl font-bold text-primary">{summary.totalCategories}</p></Card>
+            <Card><p className="text-label-sm text-on-surface-variant">Total Assets</p><p className="mt-2 text-3xl font-bold text-primary">{summary.totalAssets}</p></Card>
+            <Card><p className="text-label-sm text-on-surface-variant">Active</p><p className="mt-2 text-3xl font-bold text-secondary">{summary.active}</p></Card>
+            <Card><p className="text-label-sm text-on-surface-variant">Inactive</p><p className="mt-2 text-3xl font-bold text-error">{summary.inactive}</p></Card>
+          </section>
 
-        <section>
-          <Card title="Asset Registry" subtitle="Search by asset tag, name, serial number, or assignee">
-            <SearchBar placeholder="Search assets" value={search} onChange={(event) => setSearch(event.target.value)} />
-            <div className="mt-4 grid grid-cols-2 gap-3 lg:grid-cols-4">
-              {[
-                ["category", categoryOptions],
-                ["status", statusOptions],
-                ["department", departmentOptions],
-                ["location", locationOptions],
-              ].map(([key, options]) => (
-                <select
-                  key={key}
-                  className="rounded-lg border border-outline-variant bg-surface-container-low px-3 py-2 font-label-md text-label-md text-on-surface outline-none transition-colors focus:border-primary"
-                  value={filters[key]}
-                  onChange={(event) => setFilters((current) => ({ ...current, [key]: event.target.value }))}
-                >
-                  {options.map((option) => (
-                    <option key={option} value={option}>
-                      {option}
-                    </option>
-                  ))}
-                </select>
-              ))}
-            </div>
-          </Card>
-        </section>
-
-        <section>
-          <Card title="Asset Table" subtitle="Create, view, edit, and delete assets">
-            {loading ? (
-              <div className="p-8 text-center text-on-surface-variant">Loading assets...</div>
-            ) : error ? (
-              <div className="p-8 text-center text-error">{error}</div>
-            ) : (
-              <Table
-                columns={[
-                  {
-                    key: "assetTag",
-                    label: "Asset Tag",
-                    render: (asset) => (
-                      <button className="font-bold text-primary hover:underline" onClick={() => openView(asset)} type="button">
-                        {asset.assetTag}
-                      </button>
-                    ),
-                  },
-                  { key: "name", label: "Name" },
-                  { key: "category", label: "Category" },
-                  { key: "status", label: "Status", render: (asset) => <StatusBadge status={asset.status} /> },
-                  { key: "location", label: "Location" },
-                  { key: "assignedEmployee", label: "Assigned Employee" },
-                  { key: "lastUpdated", label: "Last Updated" },
-                  {
-                    key: "actions",
-                    label: "Actions",
-                    render: (asset) => (
-                      <AssetActionMenu
-                        onView={() => openView(asset)}
-                        onEdit={() => openEditModal(asset)}
-                        onDelete={() => openDeleteModal(asset)}
-                      />
-                    ),
-                  },
-                ]}
-                rows={filteredAssets}
-                emptyMessage="No assets match the selected filters."
-              />
-            )}
-          </Card>
-        </section>
-
-        <section className="grid grid-cols-1 gap-md xl:grid-cols-3">
-          {filteredAssets.slice(0, 3).map((asset) => (
-            <Card key={asset.id} className="h-full">
-              <div className="flex items-start justify-between gap-4">
-                <div>
-                  <p className="text-sm uppercase tracking-wide text-outline">{asset.assetTag}</p>
-                  <h3 className="mt-1 text-2xl font-bold text-primary">{asset.name}</h3>
-                  <p className="mt-1 text-on-surface-variant">{asset.category}</p>
-                </div>
-                <StatusBadge status={asset.status} />
-              </div>
-              <p className="mt-4 text-sm text-on-surface-variant">{asset.description}</p>
-              <div className="mt-5 space-y-2 text-sm text-on-surface">
-                <p><span className="font-bold">Location:</span> {asset.location}</p>
-                <p><span className="font-bold">Assigned:</span> {asset.assignedEmployee}</p>
-                <p><span className="font-bold">Updated:</span> {asset.lastUpdated}</p>
-              </div>
-              <div className="mt-5 flex flex-wrap gap-2">
-                <button className="rounded-lg bg-primary px-4 py-2 text-sm font-bold text-on-primary" type="button" onClick={() => openView(asset)}>
-                  View Details
-                </button>
-                <button className="rounded-lg border border-outline-variant px-4 py-2 text-sm font-bold text-primary" type="button" onClick={() => openAction(asset, "allocate")}>
-                  Allocate Asset
-                </button>
-                <button className="rounded-lg border border-outline-variant px-4 py-2 text-sm font-bold text-primary" type="button" onClick={() => openAction(asset, "transfer")}>
-                  Transfer Asset
-                </button>
-                <button className="rounded-lg border border-outline-variant px-4 py-2 text-sm font-bold text-on-surface" type="button" onClick={() => openAction(asset, "return")}>
-                  Return Asset
-                </button>
+          <section>
+            <Card title="Asset Registry" subtitle="Search by asset tag, name, serial number, or QR code">
+              <SearchBar placeholder="Search assets" value={search} onChange={(event) => setSearch(event.target.value)} />
+              <div className="mt-4 grid grid-cols-2 gap-3 lg:grid-cols-4">
+                {[
+                  ["category", categoryOptions],
+                  ["status", statusOptions],
+                  ["department", departmentOptions],
+                  ["location", locationOptions],
+                ].map(([key, options]) => (
+                  <select
+                    key={key}
+                    className="rounded-lg border border-outline-variant bg-surface-container-low px-3 py-2 font-label-md text-label-md text-on-surface outline-none transition-colors focus:border-primary"
+                    value={filters[key]}
+                    onChange={(event) => setFilters((current) => ({ ...current, [key]: event.target.value }))}
+                  >
+                    {options.map((option) => (
+                      <option key={option} value={option}>
+                        {option}
+                      </option>
+                    ))}
+                  </select>
+                ))}
               </div>
             </Card>
-          ))}
-        </section>
-      </div>
+          </section>
+
+          <section>
+            <Card title="Asset Table" subtitle="Responsive dummy data for the hackathon build">
+              <Table columns={columns} rows={filteredAssets} emptyMessage="No assets match the selected filters." />
+            </Card>
+          </section>
+
+          <section className="grid grid-cols-1 gap-md xl:grid-cols-3">
+            {filteredAssets.slice(0, 3).map((asset) => (
+              <Card key={asset.id} className="h-full">
+                <div className="flex items-start justify-between gap-4">
+                  <div>
+                    <p className="text-sm uppercase tracking-wide text-outline">{asset.assetTag}</p>
+                    <h3 className="mt-1 text-2xl font-bold text-primary">{asset.name}</h3>
+                    <p className="mt-1 text-on-surface-variant">{asset.category}</p>
+                  </div>
+                  <StatusBadge status={asset.status} />
+                </div>
+                <p className="mt-4 text-sm text-on-surface-variant">{asset.description}</p>
+                <div className="mt-5 space-y-2 text-sm text-on-surface">
+                  <p><span className="font-bold">Location:</span> {asset.location}</p>
+                  <p><span className="font-bold">Assigned:</span> {asset.assignedEmployee}</p>
+                  <p><span className="font-bold">Updated:</span> {asset.lastUpdated}</p>
+                </div>
+                <div className="mt-5 flex flex-wrap gap-2">
+                  <button className="rounded-lg bg-primary px-4 py-2 text-sm font-bold text-on-primary" type="button" onClick={() => openViewModal(asset)}>
+                    View Details
+                  </button>
+                  <button className="rounded-lg border border-outline-variant px-4 py-2 text-sm font-bold text-primary" type="button" onClick={() => { setSelectedAsset(asset); updateSelectedAsset("Allocated", "Allocate Asset"); }}>
+                    Allocate Asset
+                  </button>
+                  <button className="rounded-lg border border-outline-variant px-4 py-2 text-sm font-bold text-primary" type="button" onClick={() => { setSelectedAsset(asset); updateSelectedAsset("Reserved", "Transfer Asset"); }}>
+                    Transfer Asset
+                  </button>
+                  <button className="rounded-lg border border-outline-variant px-4 py-2 text-sm font-bold text-on-surface" type="button" onClick={() => { setSelectedAsset(asset); updateSelectedAsset("Available", "Return Asset"); }}>
+                    Return Asset
+                  </button>
+                </div>
+              </Card>
+            ))}
+          </section>
+        </div>
+      </main>
 
       <Modal open={createOpen} onClose={() => setCreateOpen(false)} title="Register Asset" size="lg">
-        <AssetForm form={form} onChange={updateFormField} isEdit={false} error={formError} />
+        <div className="grid gap-4 sm:grid-cols-2">
+          {[
+            ["assetTag", "Asset Tag"],
+            ["name", "Asset Name"],
+            ["serialNumber", "Serial Number"],
+            ["qrCode", "QR Code"],
+            ["assignedEmployee", "Assigned Employee"],
+            ["lastUpdated", "Last Updated"],
+          ].map(([key, label]) => (
+            <label key={key} className="space-y-2">
+              <span className="text-sm font-bold text-on-surface">{label}</span>
+              <input className={modalField} value={form[key]} onChange={(event) => setForm((current) => ({ ...current, [key]: event.target.value }))} />
+            </label>
+          ))}
+          {[
+            ["category", categoryOptions.slice(1)],
+            ["status", statusOptions.slice(1)],
+            ["department", departmentOptions.slice(1)],
+            ["location", locationOptions.slice(1)],
+            ["condition", ["Good", "Fair", "Damaged"]],
+          ].map(([key, options]) => (
+            <label key={key} className="space-y-2">
+              <span className="text-sm font-bold text-on-surface">{key}</span>
+              <select className={modalField} value={form[key]} onChange={(event) => setForm((current) => ({ ...current, [key]: event.target.value }))}>
+                {options.map((option) => (
+                  <option key={option} value={option}>
+                    {option}
+                  </option>
+                ))}
+              </select>
+            </label>
+          ))}
+          <label className="space-y-2 sm:col-span-2">
+            <span className="text-sm font-bold text-on-surface">Description</span>
+            <textarea className={`${modalField} min-h-28`} value={form.description} onChange={(event) => setForm((current) => ({ ...current, description: event.target.value }))} />
+          </label>
+        </div>
         <div className="mt-6 flex justify-end gap-3">
-          <button className="rounded-lg border border-outline-variant px-4 py-2 font-bold text-on-surface" onClick={() => setCreateOpen(false)} type="button">Cancel</button>
-          <Button disabled={saving} onClick={saveForm}>{saving ? "Saving..." : "Save Asset"}</Button>
+          <button className="rounded-lg border border-outline-variant px-4 py-2 font-bold text-on-surface" onClick={() => setCreateOpen(false)} type="button">
+            Cancel
+          </button>
+          <Button onClick={handleSaveAsset}>Save Asset</Button>
         </div>
       </Modal>
 
       <Modal open={editOpen} onClose={() => setEditOpen(false)} title="Edit Asset" size="lg">
-        <AssetForm form={form} onChange={updateFormField} isEdit error={formError} />
+        <div className="grid gap-4 sm:grid-cols-2">
+          {[
+            ["assetTag", "Asset Tag"],
+            ["name", "Asset Name"],
+            ["serialNumber", "Serial Number"],
+            ["qrCode", "QR Code"],
+            ["assignedEmployee", "Assigned Employee"],
+            ["lastUpdated", "Last Updated"],
+          ].map(([key, label]) => (
+            <label key={key} className="space-y-2">
+              <span className="text-sm font-bold text-on-surface">{label}</span>
+              <input className={modalField} value={form[key]} onChange={(event) => setForm((current) => ({ ...current, [key]: event.target.value }))} />
+            </label>
+          ))}
+          {[
+            ["category", categoryOptions.slice(1)],
+            ["status", statusOptions.slice(1)],
+            ["department", departmentOptions.slice(1)],
+            ["location", locationOptions.slice(1)],
+            ["condition", ["Good", "Fair", "Damaged"]],
+          ].map(([key, options]) => (
+            <label key={key} className="space-y-2">
+              <span className="text-sm font-bold text-on-surface">{key}</span>
+              <select className={modalField} value={form[key]} onChange={(event) => setForm((current) => ({ ...current, [key]: event.target.value }))}>
+                {options.map((option) => (
+                  <option key={option} value={option}>
+                    {option}
+                  </option>
+                ))}
+              </select>
+            </label>
+          ))}
+          <label className="space-y-2 sm:col-span-2">
+            <span className="text-sm font-bold text-on-surface">Description</span>
+            <textarea className={`${modalField} min-h-28`} value={form.description} onChange={(event) => setForm((current) => ({ ...current, description: event.target.value }))} />
+          </label>
+        </div>
         <div className="mt-6 flex justify-end gap-3">
-          <button className="rounded-lg border border-outline-variant px-4 py-2 font-bold text-on-surface" onClick={() => setEditOpen(false)} type="button">Cancel</button>
-          <Button disabled={saving} onClick={saveForm}>{saving ? "Saving..." : "Update Asset"}</Button>
+          <button className="rounded-lg border border-outline-variant px-4 py-2 font-bold text-on-surface" onClick={() => setEditOpen(false)} type="button">
+            Cancel
+          </button>
+          <Button onClick={handleSaveAsset}>Update Asset</Button>
         </div>
       </Modal>
 
       <Modal open={deleteOpen} onClose={() => setDeleteOpen(false)} title="Delete Asset" size="sm">
         <p className="text-on-surface-variant">
-          This will permanently remove <span className="font-bold text-on-surface">{selectedAsset?.name}</span> ({selectedAsset?.assetTag}) and its history.
+          This will remove <span className="font-bold text-on-surface">{selectedAsset?.name}</span> from the dummy dataset.
         </p>
-        {formError ? <p className="mt-3 text-sm text-error">{formError}</p> : null}
         <div className="mt-6 flex justify-end gap-3">
-          <button className="rounded-lg border border-outline-variant px-4 py-2 font-bold text-on-surface" onClick={() => setDeleteOpen(false)} type="button">Cancel</button>
-          <button className="rounded-lg bg-error px-4 py-2 font-bold text-white disabled:opacity-50" disabled={saving} onClick={confirmDelete} type="button">
-            {saving ? "Deleting..." : "Delete"}
+          <button className="rounded-lg border border-outline-variant px-4 py-2 font-bold text-on-surface" onClick={() => setDeleteOpen(false)} type="button">
+            Cancel
+          </button>
+          <button className="rounded-lg bg-error px-4 py-2 font-bold text-white" onClick={handleDeleteAsset} type="button">
+            Delete
           </button>
         </div>
-      </Modal>
-
-      <Modal open={actionOpen} onClose={() => setActionOpen(false)} title="Lifecycle Action" size="md">
-        {actionAsset ? (
-          <div className="space-y-4">
-            <div>
-              <p className="font-label-md text-label-md text-on-surface">{actionAsset.assetTag} • {actionAsset.name}</p>
-              <p className="text-sm text-on-surface-variant">Current status: {actionAsset.status}</p>
-            </div>
-            {actionType === "allocate" ? (
-              <label className="block">
-                <span className="mb-1 block font-label-md text-label-md text-on-surface">Assigned employee</span>
-                <input className={modalField} value={actionValue} onChange={(event) => { setActionValue(event.target.value); if (formError) setFormError(""); }} />
-              </label>
-            ) : null}
-            {actionType === "transfer" ? (
-              <label className="block">
-                <span className="mb-1 block font-label-md text-label-md text-on-surface">New department</span>
-                <input className={modalField} value={actionValue} onChange={(event) => { setActionValue(event.target.value); if (formError) setFormError(""); }} />
-              </label>
-            ) : null}
-            {actionType === "return" ? (
-              <label className="block">
-                <span className="mb-1 block font-label-md text-label-md text-on-surface">Return condition</span>
-                <select className={modalField} value={actionValue} onChange={(event) => { setActionValue(event.target.value); if (formError) setFormError(""); }}>
-                  {conditionOptions.map((option) => <option key={option}>{option}</option>)}
-                </select>
-              </label>
-            ) : null}
-            {formError ? <p className="text-sm text-error">{formError}</p> : null}
-            <div className="flex justify-end gap-3">
-              <button className="rounded-lg border border-outline-variant px-4 py-2 font-bold text-on-surface" onClick={() => setActionOpen(false)} type="button">Cancel</button>
-              <Button disabled={saving} onClick={runAction}>{saving ? "Working..." : "Confirm"}</Button>
-            </div>
-          </div>
-        ) : null}
       </Modal>
 
       <AssetDetailDrawer
         asset={selectedAsset}
         open={viewOpen}
         onClose={() => setViewOpen(false)}
-        onTransferRequest={() => openAction(selectedAsset, "transfer")}
-        onAllocate={() => openAction(selectedAsset, "allocate")}
-        onTransfer={() => openAction(selectedAsset, "transfer")}
-        onReturn={() => openAction(selectedAsset, "return")}
+        onAllocate={(asset) => {
+          setSelectedAsset(asset);
+          updateSelectedAsset("Allocated", "Allocate Asset");
+        }}
+        onTransfer={(asset) => {
+          setSelectedAsset(asset);
+          updateSelectedAsset("Reserved", "Transfer Asset");
+        }}
+        onReturn={(asset) => {
+          setSelectedAsset(asset);
+          updateSelectedAsset("Available", "Return Asset");
+        }}
+        onTransferRequest={handleTransferRequest}
       />
     </div>
-  );
-}
-
-function AssetForm({ form, onChange, isEdit = false, error = "" }) {
-  const inputClass = "w-full rounded-lg border border-outline-variant bg-surface-container-low px-3 py-3 font-heading text-heading outline-none transition-colors focus:border-primary";
-  return (
-    <div className="grid gap-4 sm:grid-cols-2">
-      {isEdit ? (
-        <FormField label="Asset Tag">
-          <input className={inputClass} value={form.assetTag || ""} disabled />
-        </FormField>
-      ) : null}
-      <FormField label="Asset Name" error={error.includes("name") ? error : ""}>
-        <input className={inputClass} value={form.name || ""} onChange={(e) => onChange("name", e.target.value)} />
-      </FormField>
-      <FormField label="Serial Number">
-        <input className={inputClass} value={form.serialNumber || ""} onChange={(e) => onChange("serialNumber", e.target.value)} />
-      </FormField>
-      <FormField label="Category" error={error.includes("category") ? error : ""}>
-        <input className={inputClass} value={form.category || ""} onChange={(e) => onChange("category", e.target.value)} />
-      </FormField>
-      <FormField label="QR Code">
-        <input className={inputClass} value={form.qrCode || ""} onChange={(e) => onChange("qrCode", e.target.value)} />
-      </FormField>
-      <FormField label="Department" error={error.includes("department") ? error : ""}>
-        <input className={inputClass} value={form.department || ""} onChange={(e) => onChange("department", e.target.value)} />
-      </FormField>
-      <FormField label="Location" error={error.includes("location") ? error : ""}>
-        <input className={inputClass} value={form.location || ""} onChange={(e) => onChange("location", e.target.value)} />
-      </FormField>
-      <FormField label="Status">
-        <select className={inputClass} value={form.status || "Available"} onChange={(e) => onChange("status", e.target.value)}>
-          {statusOptions.slice(1).map((option) => <option key={option}>{option}</option>)}
-        </select>
-      </FormField>
-      <FormField label="Condition">
-        <select className={inputClass} value={form.condition || "Good"} onChange={(e) => onChange("condition", e.target.value)}>
-          {conditionOptions.map((option) => <option key={option}>{option}</option>)}
-        </select>
-      </FormField>
-      <FormField label="Assigned Employee">
-        <input className={inputClass} value={form.assignedEmployee || ""} onChange={(e) => onChange("assignedEmployee", e.target.value)} />
-      </FormField>
-      <div className="sm:col-span-2">
-        <FormField label="Description">
-          <textarea className={`${inputClass} min-h-24`} value={form.description || ""} onChange={(e) => onChange("description", e.target.value)} />
-        </FormField>
-      </div>
-    </div>
-  );
-}
-
-function FormField({ label, error = "", children }) {
-  return (
-    <label className="block">
-      <span className="mb-1 block font-label-md text-label-md text-on-surface">{label}</span>
-      {children}
-      {error ? <span className="mt-1 block text-sm text-error">{error}</span> : null}
-    </label>
   );
 }

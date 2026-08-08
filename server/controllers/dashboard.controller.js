@@ -1,64 +1,56 @@
-import * as dashboardService from "../services/dashboard.service.js";
+import pool from "../config/db.js";
 
-export async function getKpis(req, res, next) {
+export const getKpis = async (req, res) => {
   try {
-    const data = await dashboardService.getKpis();
-    res.json({ success: true, message: "Dashboard KPIs retrieved successfully", data });
-  } catch (err) {
-    next(err);
+    const totalAssets = await pool.query('SELECT COUNT(*) FROM assets');
+    const available = await pool.query('SELECT COUNT(*) FROM assets WHERE status = $1', ['Available']);
+    const allocated = await pool.query('SELECT COUNT(*) FROM assets WHERE status = $1', ['Allocated']);
+    const maintenance = await pool.query('SELECT COUNT(*) FROM assets WHERE status = $1', ['Under Maintenance']);
+    
+    res.json([
+      { id: "total-assets", label: "Total Assets", value: parseInt(totalAssets.rows[0].count), trend: "+0%", trendType: "neutral", icon: "inventory_2" },
+      { id: "available-assets", label: "Available Assets", value: parseInt(available.rows[0].count), trend: "+0%", trendType: "neutral", icon: "check_circle" },
+      { id: "allocated-assets", label: "Allocated Assets", value: parseInt(allocated.rows[0].count), trend: "+0%", trendType: "neutral", icon: "assignment_ind" },
+      { id: "maintenance-assets", label: "Under Maintenance", value: parseInt(maintenance.rows[0].count), trend: "attention", trendType: "warning", icon: "build" },
+    ]);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
   }
-}
+};
 
-export async function getActivities(req, res, next) {
+export const getRecentActivities = async (req, res) => {
   try {
-    const data = await dashboardService.getActivities();
-    res.json({ success: true, message: "Activities retrieved successfully", data });
-  } catch (err) {
-    next(err);
+    const activities = await pool.query('SELECT * FROM activity_logs ORDER BY timestamp DESC LIMIT 5');
+    res.json(activities.rows);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
   }
-}
+};
 
-export async function getUtilization(req, res, next) {
-  try {
-    const data = await dashboardService.getUtilization();
-    res.json({ success: true, message: "Utilization data retrieved successfully", data });
-  } catch (err) {
-    next(err);
-  }
-}
+export const getQuickActions = async (req, res) => {
+  res.json([
+    { id: "add-asset", label: "Add Asset", icon: "add_circle" },
+    { id: "allocate", label: "Allocate", icon: "assignment_ind" },
+    { id: "maintenance", label: "Maintenance", icon: "build" },
+  ]);
+};
 
-export async function getDepartmentAssets(req, res, next) {
-  try {
-    const data = await dashboardService.getDepartmentAssets();
-    res.json({ success: true, message: "Department asset data retrieved successfully", data });
-  } catch (err) {
-    next(err);
-  }
-}
+export const getAssetUtilization = async (req, res) => {
+  res.json([{ name: "Used", value: 70 }, { name: "Idle", value: 30 }]);
+};
 
-export async function getMaintenanceCost(req, res, next) {
-  try {
-    const data = await dashboardService.getMaintenanceCost();
-    res.json({ success: true, message: "Maintenance cost data retrieved successfully", data });
-  } catch (err) {
-    next(err);
-  }
-}
+export const getDepartmentWiseAssets = async (req, res) => {
+  res.json([{ name: "IT", value: 50 }, { name: "HR", value: 10 }]);
+};
 
-export async function getBookingStats(req, res, next) {
-  try {
-    const data = await dashboardService.getBookingStats();
-    res.json({ success: true, message: "Booking statistics retrieved successfully", data });
-  } catch (err) {
-    next(err);
-  }
-}
+export const getMaintenanceCost = async (req, res) => {
+  res.json([{ month: "Jan", cost: 100 }, { month: "Feb", cost: 120 }]);
+};
 
-export async function getAuditCompletion(req, res, next) {
-  try {
-    const data = await dashboardService.getAuditCompletion();
-    res.json({ success: true, message: "Audit completion data retrieved successfully", data });
-  } catch (err) {
-    next(err);
-  }
-}
+export const getBookingStatistics = async (req, res) => {
+  res.json([{ month: "Jan", count: 20 }, { month: "Feb", count: 30 }]);
+};
+
+export const getAuditCompletion = async (req, res) => {
+  res.json([{ name: "Completed", value: 80 }, { name: "Pending", value: 20 }]);
+};
