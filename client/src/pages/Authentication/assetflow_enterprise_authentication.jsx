@@ -123,7 +123,7 @@ void main() {
     setBtnText(isLogin ? 'Authenticating...' : 'Registering...');
     
     try {
-      const endpoint = isLogin ? 'http://localhost:5001/api/auth/login' : 'http://localhost:5001/api/auth/register';
+      const endpoint = isLogin ? 'http://localhost:5000/api/auth/login' : 'http://localhost:5000/api/auth/register';
       const payload = isLogin ? { email, password } : { email, password, name, phone };
 
       const response = await fetch(endpoint, {

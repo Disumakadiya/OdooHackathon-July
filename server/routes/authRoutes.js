@@ -1,21 +1,13 @@
 import express from 'express';
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
-import rateLimit from 'express-rate-limit';
 import pool from '../config/db.js';
 
 const router = express.Router();
 const JWT_SECRET = process.env.JWT_SECRET || 'your_super_secret_key_hackathon';
-const authRateLimit = rateLimit({
-  windowMs: 60 * 1000,
-  max: 10,
-  standardHeaders: true,
-  legacyHeaders: false,
-  message: { message: 'Too many requests, please try again later' }
-});
 
 // Register User
-router.post('/register', authRateLimit, async (req, res) => {
+router.post('/register', async (req, res) => {
   try {
     const { email, password, name, phone } = req.body;
 
@@ -61,7 +53,7 @@ router.post('/register', authRateLimit, async (req, res) => {
 });
 
 // Login User
-router.post('/login', authRateLimit, async (req, res) => {
+router.post('/login', async (req, res) => {
   try {
     const { email, password } = req.body;
 
