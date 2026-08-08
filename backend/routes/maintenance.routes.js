@@ -1,10 +1,10 @@
-const express = require('express');
-const maintenanceController = require('../controllers/maintenance.controller');
-const {
+import express from 'express';
+import * as maintenanceController from '../controllers/maintenance.controller.js';
+import {
   validateMaintenanceId,
   validateCreateMaintenance,
   validateUpdateMaintenance,
-} = require('../validators/maintenance.validator');
+} from '../validators/maintenance.validator.js';
 
 const router = express.Router();
 
@@ -14,4 +14,4 @@ router.get('/:id', validateMaintenanceId, maintenanceController.getMaintenanceBy
 router.put('/:id', validateMaintenanceId, validateUpdateMaintenance, maintenanceController.updateMaintenance);
 router.delete('/:id', validateMaintenanceId, maintenanceController.deleteMaintenance);
 
-module.exports = router;
+export default router;

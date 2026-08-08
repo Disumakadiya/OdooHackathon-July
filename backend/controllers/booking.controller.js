@@ -1,6 +1,6 @@
-const bookingService = require('../services/booking.service');
+import * as bookingService from '../services/booking.service.js';
 
-exports.getAllBookings = async (req, res, next) => {
+export const getAllBookings = async (req, res, next) => {
   try {
     const bookings = await bookingService.getAllBookings();
     res.status(200).json({
@@ -13,7 +13,7 @@ exports.getAllBookings = async (req, res, next) => {
   }
 };
 
-exports.getBookingById = async (req, res, next) => {
+export const getBookingById = async (req, res, next) => {
   try {
     const booking = await bookingService.getBookingById(req.params.id);
     if (!booking) {
@@ -30,7 +30,7 @@ exports.getBookingById = async (req, res, next) => {
   }
 };
 
-exports.createBooking = async (req, res, next) => {
+export const createBooking = async (req, res, next) => {
   try {
     const booking = await bookingService.createBooking(req.body);
     res.status(201).json({
@@ -43,7 +43,7 @@ exports.createBooking = async (req, res, next) => {
   }
 };
 
-exports.updateBooking = async (req, res, next) => {
+export const updateBooking = async (req, res, next) => {
   try {
     const booking = await bookingService.updateBooking(req.params.id, req.body);
     res.status(200).json({
@@ -56,7 +56,7 @@ exports.updateBooking = async (req, res, next) => {
   }
 };
 
-exports.deleteBooking = async (req, res, next) => {
+export const deleteBooking = async (req, res, next) => {
   try {
     await bookingService.deleteBooking(req.params.id);
     res.status(200).json({

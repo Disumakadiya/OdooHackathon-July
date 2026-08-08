@@ -1,30 +1,38 @@
-const { body, param, validationResult } = require('express-validator');
+const PRIORITIES = ['Low', 'Medium', 'High', 'Critical'];
+const STATUSES = ['Open', 'In Progress', 'Resolved'];
 
-const validate = (req, res, next) => {
-  const errors = validationResult(req);
-  if (!errors.isEmpty()) {
-    return res.status(400).json({ success: false, errors: errors.array() });
+const sendErrors = (res, errors) => res.status(400).json({ success: false, errors: errors.map((msg) => ({ msg })) });
+
+const validatePayload = (payload, requiredFields = []) => {
+  const errors = [];
+  for (const field of requiredFields) {
+    if (!payload[field]) errors.push(`${field} is required`);
   }
+  for (const field of ['asset_id', 'description']) {
+    if (field in payload && !payload[field]) errors.push(`${field} cannot be empty`);
+  }
+  if (payload.priority && !PRIORITIES.includes(payload.priority)) {
+    errors.push('priority must be one of Low, Medium, High, Critical');
+  }
+  if (payload.status && !STATUSES.includes(payload.status)) {
+    errors.push('status must be one of Open, In Progress, Resolved');
+  }
+  return errors;
+};
+
+export const validateCreateMaintenance = (req, res, next) => {
+  const errors = validatePayload(req.body, ['asset_id', 'description']);
+  if (errors.length > 0) return sendErrors(res, errors);
   next();
 };
 
-exports.validateCreateMaintenance = [
-  body('asset_id').exists({ checkFalsy: true }).withMessage('asset_id is required'),
-  body('description').exists({ checkFalsy: true }).withMessage('description is required'),
-  body('priority').optional().isIn(['Low', 'Medium', 'High', 'Critical']).withMessage('priority must be one of Low, Medium, High, Critical'),
-  body('status').optional().isIn(['Open', 'In Progress', 'Resolved']).withMessage('status must be one of Open, In Progress, Resolved'),
-  validate,
-];
+export const validateUpdateMaintenance = (req, res, next) => {
+  const errors = validatePayload(req.body);
+  if (errors.length > 0) return sendErrors(res, errors);
+  next();
+};
 
-exports.validateUpdateMaintenance = [
-  body('asset_id').optional({ values: 'falsy' }).notEmpty().withMessage('asset_id cannot be empty'),
-  body('description').optional({ values: 'falsy' }).notEmpty().withMessage('description cannot be empty'),
-  body('priority').optional().isIn(['Low', 'Medium', 'High', 'Critical']).withMessage('priority must be one of Low, Medium, High, Critical'),
-  body('status').optional().isIn(['Open', 'In Progress', 'Resolved']).withMessage('status must be one of Open, In Progress, Resolved'),
-  validate,
-];
-
-exports.validateMaintenanceId = [
-  param('id').notEmpty().withMessage('Maintenance id is required'),
-  validate,
-];
+export const validateMaintenanceId = (req, res, next) => {
+  if (!req.params.id) return sendErrors(res, ['Maintenance id is required']);
+  next();
+};

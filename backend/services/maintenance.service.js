@@ -1,5 +1,5 @@
-const { pool } = require('../config/db');
-const { createMaintenanceNotification } = require('./notification.service');
+import { pool } from '../config/db.js';
+import { createMaintenanceNotification } from './notification.service.js';
 
 const TABLE_NAME = 'maintenance_requests';
 const ALLOWED_PRIORITIES = ['Low', 'Medium', 'High', 'Critical'];
@@ -22,7 +22,7 @@ const validateEnum = (value, allowed, fieldName) => {
   }
 };
 
-exports.getAllMaintenances = async () => {
+export const getAllMaintenances = async () => {
   try {
     const result = await pool.query(`SELECT * FROM ${TABLE_NAME} ORDER BY created_at DESC`);
     return result.rows;
@@ -33,7 +33,7 @@ exports.getAllMaintenances = async () => {
   }
 };
 
-exports.getMaintenanceById = async (id) => {
+export const getMaintenanceById = async (id) => {
   try {
     const result = await pool.query(`SELECT * FROM ${TABLE_NAME} WHERE id = $1`, [id]);
     return result.rows[0] || null;
@@ -44,7 +44,7 @@ exports.getMaintenanceById = async (id) => {
   }
 };
 
-exports.createMaintenance = async (payload) => {
+export const createMaintenance = async (payload) => {
   const normalized = normalizePayload(payload);
   validateEnum(normalized.priority, ALLOWED_PRIORITIES, 'priority');
   validateEnum(normalized.status, ALLOWED_STATUSES, 'status');
@@ -93,8 +93,8 @@ exports.createMaintenance = async (payload) => {
   }
 };
 
-exports.updateMaintenance = async (id, payload) => {
-  const existing = await exports.getMaintenanceById(id);
+export const updateMaintenance = async (id, payload) => {
+  const existing = await getMaintenanceById(id);
   if (!existing) {
     const error = new Error('Maintenance request not found');
     error.statusCode = 404;
@@ -149,7 +149,7 @@ exports.updateMaintenance = async (id, payload) => {
   }
 };
 
-exports.deleteMaintenance = async (id) => {
+export const deleteMaintenance = async (id) => {
   try {
     const result = await pool.query(`DELETE FROM ${TABLE_NAME} WHERE id = $1 RETURNING id`, [id]);
     if (result.rowCount === 0) {

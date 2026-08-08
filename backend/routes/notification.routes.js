@@ -1,5 +1,5 @@
-const express = require('express');
-const notificationController = require('../controllers/notification.controller');
+import express from 'express';
+import * as notificationController from '../controllers/notification.controller.js';
 
 const router = express.Router();
 
@@ -9,4 +9,4 @@ router.patch('/:id/read', notificationController.markAsRead);
 router.delete('/:id', notificationController.deleteNotification);
 
 
-module.exports = router;
+export default router;

@@ -1,5 +1,5 @@
-git pullconst { query, pool } = require('../config/db');
-const { createBookingNotification } = require('./notification.service');
+import { query, pool } from '../config/db.js';
+import { createBookingNotification } from './notification.service.js';
 
 
 const TABLE_NAME = 'resource_bookings';
@@ -65,7 +65,7 @@ const validateBusinessRules = async ({ assetId, employeeId, startTime, endTime, 
   }
 };
 
-exports.getAllBookings = async () => {
+export const getAllBookings = async () => {
   try {
     const result = await query(`SELECT * FROM ${TABLE_NAME} ORDER BY start_time ASC`);
     return result.rows;
@@ -76,7 +76,7 @@ exports.getAllBookings = async () => {
   }
 };
 
-exports.getBookingById = async (id) => {
+export const getBookingById = async (id) => {
   try {
     const result = await query(`SELECT * FROM ${TABLE_NAME} WHERE id = $1`, [id]);
     return result.rows[0] || null;
@@ -87,7 +87,7 @@ exports.getBookingById = async (id) => {
   }
 };
 
-exports.createBooking = async (payload) => {
+export const createBooking = async (payload) => {
   const normalized = normalizeBookingPayload(payload);
   const client = await pool.connect();
 
@@ -176,8 +176,8 @@ exports.createBooking = async (payload) => {
 };
 
 
-exports.updateBooking = async (id, payload) => {
-  const existing = await exports.getBookingById(id);
+export const updateBooking = async (id, payload) => {
+  const existing = await getBookingById(id);
   if (!existing) {
     const error = new Error('Booking not found');
     error.statusCode = 404;
@@ -214,7 +214,7 @@ exports.updateBooking = async (id, payload) => {
   }
 };
 
-exports.deleteBooking = async (id) => {
+export const deleteBooking = async (id) => {
   const client = await pool.connect();
 
   try {

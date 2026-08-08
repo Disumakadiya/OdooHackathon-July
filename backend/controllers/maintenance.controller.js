@@ -1,6 +1,6 @@
-const maintenanceService = require('../services/maintenance.service');
+import * as maintenanceService from '../services/maintenance.service.js';
 
-exports.getAllMaintenances = async (req, res, next) => {
+export const getAllMaintenances = async (req, res, next) => {
   try {
     const records = await maintenanceService.getAllMaintenances();
     res.status(200).json({ success: true, message: 'Maintenance records retrieved successfully', data: records });
@@ -9,7 +9,7 @@ exports.getAllMaintenances = async (req, res, next) => {
   }
 };
 
-exports.getMaintenanceById = async (req, res, next) => {
+export const getMaintenanceById = async (req, res, next) => {
   try {
     const record = await maintenanceService.getMaintenanceById(req.params.id);
     if (!record) {
@@ -22,7 +22,7 @@ exports.getMaintenanceById = async (req, res, next) => {
   }
 };
 
-exports.createMaintenance = async (req, res, next) => {
+export const createMaintenance = async (req, res, next) => {
   try {
     const record = await maintenanceService.createMaintenance(req.body);
     res.status(201).json({ success: true, message: 'Maintenance record created successfully', data: record });
@@ -31,7 +31,7 @@ exports.createMaintenance = async (req, res, next) => {
   }
 };
 
-exports.updateMaintenance = async (req, res, next) => {
+export const updateMaintenance = async (req, res, next) => {
   try {
     const record = await maintenanceService.updateMaintenance(req.params.id, req.body);
     res.status(200).json({ success: true, message: 'Maintenance record updated successfully', data: record });
@@ -40,7 +40,7 @@ exports.updateMaintenance = async (req, res, next) => {
   }
 };
 
-exports.deleteMaintenance = async (req, res, next) => {
+export const deleteMaintenance = async (req, res, next) => {
   try {
     await maintenanceService.deleteMaintenance(req.params.id);
     res.status(200).json({ success: true, message: 'Maintenance record deleted successfully' });

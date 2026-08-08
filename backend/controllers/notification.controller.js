@@ -1,6 +1,6 @@
-const notificationService = require('../services/notification.service');
+import * as notificationService from '../services/notification.service.js';
 
-exports.getNotifications = async (req, res, next) => {
+export const getNotifications = async (req, res, next) => {
   try {
     const notifications = await notificationService.getNotifications();
     res.status(200).json({ success: true, message: 'Notifications retrieved successfully', data: notifications });
@@ -9,7 +9,7 @@ exports.getNotifications = async (req, res, next) => {
   }
 };
 
-exports.markAsRead = async (req, res, next) => {
+export const markAsRead = async (req, res, next) => {
   try {
     const notification = await notificationService.markAsRead(req.params.id);
     res.status(200).json({ success: true, message: 'Notification marked as read', data: notification });
@@ -18,7 +18,7 @@ exports.markAsRead = async (req, res, next) => {
   }
 };
 
-exports.markAllRead = async (req, res, next) => {
+export const markAllRead = async (req, res, next) => {
   try {
     const notifications = await notificationService.markAllRead();
     res.status(200).json({ success: true, message: 'All notifications marked as read', data: notifications });
@@ -27,7 +27,7 @@ exports.markAllRead = async (req, res, next) => {
   }
 };
 
-exports.deleteNotification = async (req, res, next) => {
+export const deleteNotification = async (req, res, next) => {
   try {
     await notificationService.deleteNotification(req.params.id);
     res.status(200).json({ success: true, message: 'Notification deleted successfully' });
