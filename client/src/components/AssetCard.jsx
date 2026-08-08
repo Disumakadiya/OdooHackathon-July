@@ -1,3 +1,5 @@
+import StatusBadge from "./StatusBadge";
+
 export default function AssetCard({ asset, onView, onAllocate, onTransfer, onReturn }) {
   return (
     <div className="h-full rounded-lg border border-outline-variant bg-surface p-lg">

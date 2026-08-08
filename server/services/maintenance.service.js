@@ -1,6 +1,5 @@
-import pool from "../config/db.js";
-const query = (text, params) => pool.query(text, params);
-import {  createMaintenanceNotification  } from "./notification.service.js";
+import { pool } from '../config/db.js';
+import { createMaintenanceNotification } from './notification.service.js';
 
 const TABLE_NAME = 'maintenance_requests';
 const ALLOWED_PRIORITIES = ['Low', 'Medium', 'High', 'Critical'];
@@ -95,7 +94,7 @@ export const createMaintenance = async (payload) => {
 };
 
 export const updateMaintenance = async (id, payload) => {
-  const existing = await exports.getMaintenanceById(id);
+  const existing = await getMaintenanceById(id);
   if (!existing) {
     const error = new Error('Maintenance request not found');
     error.statusCode = 404;

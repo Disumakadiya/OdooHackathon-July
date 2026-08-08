@@ -1,6 +1,5 @@
-import pool from "../config/db.js";
-const query = (text, params) => pool.query(text, params);
-import {  createBookingNotification  } from "./notification.service.js";
+import { query, pool } from '../config/db.js';
+import { createBookingNotification } from './notification.service.js';
 
 
 const TABLE_NAME = 'resource_bookings';
@@ -178,7 +177,7 @@ export const createBooking = async (payload) => {
 
 
 export const updateBooking = async (id, payload) => {
-  const existing = await exports.getBookingById(id);
+  const existing = await getBookingById(id);
   if (!existing) {
     const error = new Error('Booking not found');
     error.statusCode = 404;

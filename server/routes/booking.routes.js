@@ -1,10 +1,10 @@
-import express from "express";
-import * as bookingController from "../controllers/booking.controller.js";
-import { 
+import express from 'express';
+import * as bookingController from '../controllers/booking.controller.js';
+import {
   validateBookingId,
   validateCreateBooking,
   validateUpdateBooking,
- } from "../validators/booking.validator.js";
+} from '../validators/booking.validator.js';
 
 const router = express.Router();
 

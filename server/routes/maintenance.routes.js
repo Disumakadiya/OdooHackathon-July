@@ -1,10 +1,10 @@
-import express from "express";
-import * as maintenanceController from "../controllers/maintenance.controller.js";
-import { 
+import express from 'express';
+import * as maintenanceController from '../controllers/maintenance.controller.js';
+import {
   validateMaintenanceId,
   validateCreateMaintenance,
   validateUpdateMaintenance,
- } from "../validators/maintenance.validator.js";
+} from '../validators/maintenance.validator.js';
 
 const router = express.Router();
 

@@ -1,14 +1,26 @@
--- ============================================================
--- 🏗️ AssetFlow - Complete Database Schema
- -- PostgreSQL 16+ | Neon Serverless
--- ============================================================
--- Auto-generated from sync.js
--- Run: psql $DATABASE_URL -f database/schema.sql
--- ============================================================
+import pool from "../config/db.js";
 
--- ==========================================
--- 🏢 MEMBER 1: Auth & Organization Setup
--- ==========================================
+const REQUIRED_TABLES = [
+  "roles",
+  "departments",
+  "employees",
+  "users",
+  "asset_categories",
+  "assets",
+  "asset_allocations",
+  "asset_transfers",
+  "asset_returns",
+  "resource_bookings",
+  "maintenance_requests",
+  "maintenance_approvals",
+  "audit_cycles",
+  "audit_items",
+  "discrepancy_reports",
+  "notifications",
+  "activity_logs",
+];
+
+const CREATE_TABLES_SQL = `
 
 CREATE TABLE IF NOT EXISTS roles (
     id SERIAL PRIMARY KEY,
@@ -33,7 +45,6 @@ CREATE TABLE IF NOT EXISTS employees (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- FK for departments.department_head -> employees.id (circular dependency resolved after employees table)
 DO $$ BEGIN
   IF NOT EXISTS (
     SELECT 1 FROM pg_constraint WHERE conname = 'fk_department_head'
@@ -60,10 +71,6 @@ CREATE TABLE IF NOT EXISTS asset_categories (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- ==========================================
--- 📦 MEMBER 2: Assets & Lifecycle
--- ==========================================
-
 CREATE TABLE IF NOT EXISTS assets (
     id SERIAL PRIMARY KEY,
     asset_tag VARCHAR(50) UNIQUE NOT NULL,
@@ -72,13 +79,11 @@ CREATE TABLE IF NOT EXISTS assets (
     qr_code VARCHAR(100),
     category_id INT REFERENCES asset_categories(id) ON DELETE SET NULL,
     category VARCHAR(100),
-    status VARCHAR(30) DEFAULT 'Available'
-        CHECK (status IN ('Available','Allocated','Reserved','Under Maintenance','Lost','Retired','Disposed')),
+    status VARCHAR(30) DEFAULT 'Available',
     department VARCHAR(100),
     location VARCHAR(100),
     assigned_employee VARCHAR(150) DEFAULT 'Unassigned',
-    condition VARCHAR(50) DEFAULT 'Good'
-        CHECK (condition IN ('Good','Fair','Damaged')),
+    condition VARCHAR(50) DEFAULT 'Good',
     description TEXT,
     purchase_date DATE,
     cost DECIMAL(10, 2),
@@ -97,7 +102,6 @@ CREATE TABLE IF NOT EXISTS asset_allocations (
     expected_return_date DATE,
     details TEXT,
     status VARCHAR(30) DEFAULT 'Active'
-        CHECK (status IN ('Active','Returned'))
 );
 
 CREATE TABLE IF NOT EXISTS asset_transfers (
@@ -113,7 +117,6 @@ CREATE TABLE IF NOT EXISTS asset_transfers (
     approved_by INT REFERENCES users(id) ON DELETE SET NULL,
     transfer_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     status VARCHAR(30) DEFAULT 'Pending'
-        CHECK (status IN ('Pending','Approved','Rejected','Completed'))
 );
 
 CREATE TABLE IF NOT EXISTS asset_returns (
@@ -126,10 +129,6 @@ CREATE TABLE IF NOT EXISTS asset_returns (
     notes TEXT
 );
 
--- ==========================================
--- 📅 MEMBER 3: Bookings & Maintenance
--- ==========================================
-
 CREATE TABLE IF NOT EXISTS resource_bookings (
     id SERIAL PRIMARY KEY,
     asset_id INT REFERENCES assets(id) ON DELETE CASCADE,
@@ -137,8 +136,7 @@ CREATE TABLE IF NOT EXISTS resource_bookings (
     start_time TIMESTAMP NOT NULL,
     end_time TIMESTAMP NOT NULL,
     purpose TEXT,
-    status VARCHAR(30) DEFAULT 'Pending'
-        CHECK (status IN ('Pending','Approved','Rejected','Completed','Cancelled')),
+    status VARCHAR(30) DEFAULT 'Pending',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
@@ -147,10 +145,8 @@ CREATE TABLE IF NOT EXISTS maintenance_requests (
     asset_id INT REFERENCES assets(id) ON DELETE CASCADE,
     requester_id INT REFERENCES employees(id) ON DELETE SET NULL,
     description TEXT NOT NULL,
-    priority VARCHAR(20) DEFAULT 'Medium'
-        CHECK (priority IN ('Low','Medium','High','Critical')),
-    status VARCHAR(30) DEFAULT 'Open'
-        CHECK (status IN ('Open','In Progress','Resolved','Closed')),
+    priority VARCHAR(20) DEFAULT 'Medium',
+    status VARCHAR(30) DEFAULT 'Open',
     cost DECIMAL(10, 2),
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     resolved_at TIMESTAMP
@@ -161,15 +157,10 @@ CREATE TABLE IF NOT EXISTS maintenance_approvals (
     maintenance_request_id INT REFERENCES maintenance_requests(id) ON DELETE CASCADE,
     approved_by INT REFERENCES users(id) ON DELETE SET NULL,
     comments TEXT,
-    status VARCHAR(30) DEFAULT 'Pending'
-        CHECK (status IN ('Pending','Approved','Rejected')),
+    status VARCHAR(30) DEFAULT 'Pending',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     resolved_at TIMESTAMP
 );
-
--- ==========================================
--- 📊 MEMBER 4: Audits & Reports
--- ==========================================
 
 CREATE TABLE IF NOT EXISTS audit_cycles (
     id SERIAL PRIMARY KEY,
@@ -179,8 +170,7 @@ CREATE TABLE IF NOT EXISTS audit_cycles (
     start_date DATE NOT NULL,
     end_date DATE,
     initiated_by INT REFERENCES users(id) ON DELETE SET NULL,
-    status VARCHAR(30) DEFAULT 'Planned'
-        CHECK (status IN ('Planned','Active','Completed','Cancelled')),
+    status VARCHAR(30) DEFAULT 'Planned',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
@@ -188,8 +178,7 @@ CREATE TABLE IF NOT EXISTS audit_items (
     id SERIAL PRIMARY KEY,
     audit_cycle_id INT REFERENCES audit_cycles(id) ON DELETE CASCADE,
     asset_id INT REFERENCES assets(id) ON DELETE CASCADE,
-    status VARCHAR(30) DEFAULT 'Pending'
-        CHECK (status IN ('Pending','Verified','Missing','Discrepancy')),
+    status VARCHAR(30) DEFAULT 'Pending',
     scanned_by INT REFERENCES employees(id) ON DELETE SET NULL,
     scanned_at TIMESTAMP,
     discrepancy_notes TEXT
@@ -202,24 +191,18 @@ CREATE TABLE IF NOT EXISTS discrepancy_reports (
     department VARCHAR(100),
     issue VARCHAR(100),
     assigned_to VARCHAR(150),
-    status VARCHAR(30) DEFAULT 'Open'
-        CHECK (status IN ('Open','In Review','Resolved','Closed')),
+    status VARCHAR(30) DEFAULT 'Open',
     notes TEXT,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     resolved_at TIMESTAMP
 );
-
--- ==========================================
--- 🔔 MEMBER 5: Notifications & Activity
--- ==========================================
 
 CREATE TABLE IF NOT EXISTS notifications (
     id SERIAL PRIMARY KEY,
     user_id INT REFERENCES users(id) ON DELETE CASCADE,
     title VARCHAR(100) NOT NULL,
     message TEXT NOT NULL,
-    type VARCHAR(30) DEFAULT 'info'
-        CHECK (type IN ('info','success','warning','critical')),
+    type VARCHAR(30) DEFAULT 'info',
     is_read BOOLEAN DEFAULT FALSE,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
@@ -233,21 +216,70 @@ CREATE TABLE IF NOT EXISTS activity_logs (
     details JSONB,
     timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
+`;
 
--- ==========================================
--- 📈 Indexes for performance
--- ==========================================
+const MIGRATIONS = [
+  `ALTER TABLE assets ADD COLUMN IF NOT EXISTS serial_number VARCHAR(100)`,
+  `ALTER TABLE assets ADD COLUMN IF NOT EXISTS qr_code VARCHAR(100)`,
+  `ALTER TABLE assets ADD COLUMN IF NOT EXISTS category VARCHAR(100)`,
+  `ALTER TABLE assets ADD COLUMN IF NOT EXISTS department VARCHAR(100)`,
+  `ALTER TABLE assets ADD COLUMN IF NOT EXISTS description TEXT`,
+  `ALTER TABLE assets ADD COLUMN IF NOT EXISTS assigned_employee VARCHAR(150) DEFAULT 'Unassigned'`,
+  `ALTER TABLE assets ADD COLUMN IF NOT EXISTS condition VARCHAR(50) DEFAULT 'Good'`,
+  `ALTER TABLE assets ADD COLUMN IF NOT EXISTS last_updated TIMESTAMP DEFAULT CURRENT_TIMESTAMP`,
+  `ALTER TABLE asset_allocations ADD COLUMN IF NOT EXISTS employee_name VARCHAR(150)`,
+  `ALTER TABLE asset_allocations ADD COLUMN IF NOT EXISTS action VARCHAR(100)`,
+  `ALTER TABLE asset_allocations ADD COLUMN IF NOT EXISTS details TEXT`,
+  `ALTER TABLE asset_transfers ADD COLUMN IF NOT EXISTS from_department VARCHAR(100)`,
+  `ALTER TABLE asset_transfers ADD COLUMN IF NOT EXISTS to_department VARCHAR(100)`,
+  `ALTER TABLE asset_transfers ADD COLUMN IF NOT EXISTS from_location VARCHAR(100)`,
+  `ALTER TABLE asset_transfers ADD COLUMN IF NOT EXISTS to_location VARCHAR(100)`,
+  `ALTER TABLE notifications ADD COLUMN IF NOT EXISTS type VARCHAR(30) DEFAULT 'info'`,
+  `ALTER TABLE audit_cycles ADD COLUMN IF NOT EXISTS department VARCHAR(100)`,
+  `ALTER TABLE audit_cycles ADD COLUMN IF NOT EXISTS auditor VARCHAR(150)`,
+];
 
-CREATE INDEX IF NOT EXISTS idx_assets_status ON assets(status);
-CREATE INDEX IF NOT EXISTS idx_assets_category ON assets(category);
-CREATE INDEX IF NOT EXISTS idx_assets_department ON assets(department);
-CREATE INDEX IF NOT EXISTS idx_asset_allocations_asset ON asset_allocations(asset_id);
-CREATE INDEX IF NOT EXISTS idx_asset_transfers_asset ON asset_transfers(asset_id);
-CREATE INDEX IF NOT EXISTS idx_asset_returns_asset ON asset_returns(asset_id);
-CREATE INDEX IF NOT EXISTS idx_resource_bookings_times ON resource_bookings(start_time, end_time);
-CREATE INDEX IF NOT EXISTS idx_maintenance_requests_asset ON maintenance_requests(asset_id);
-CREATE INDEX IF NOT EXISTS idx_audit_items_cycle ON audit_items(audit_cycle_id);
-CREATE INDEX IF NOT EXISTS idx_audit_items_asset ON audit_items(asset_id);
-CREATE INDEX IF NOT EXISTS idx_notifications_user ON notifications(user_id);
-CREATE INDEX IF NOT EXISTS idx_notifications_read ON notifications(is_read);
-CREATE INDEX IF NOT EXISTS idx_activity_logs_timestamp ON activity_logs(timestamp DESC);
+async function syncDatabase() {
+  const client = await pool.connect();
+  try {
+    const res = await client.query(
+      "SELECT table_name FROM information_schema.tables WHERE table_schema = 'public'"
+    );
+    const existingTables = res.rows.map((r) => r.table_name);
+
+    console.log("Existing tables:", existingTables);
+
+    const missing = REQUIRED_TABLES.filter((t) => !existingTables.includes(t));
+    if (missing.length > 0) {
+      console.log("Missing tables:", missing);
+      console.log("Creating missing tables...");
+      await client.query(CREATE_TABLES_SQL);
+      console.log("All tables created successfully.");
+    } else {
+      console.log("All required tables already exist.");
+    }
+
+    const finalRes = await client.query(
+      "SELECT table_name FROM information_schema.tables WHERE table_schema = 'public' ORDER BY table_name"
+    );
+    console.log("Final tables:", finalRes.rows.map((r) => r.table_name));
+
+    console.log("Running migrations...");
+    for (const sql of MIGRATIONS) {
+      try {
+        await client.query(sql);
+      } catch (err) {
+        // Column may already exist, skip
+        console.log(`  Migration note: ${err.message.substring(0, 80)}`);
+      }
+    }
+    console.log("Migrations complete.");
+  } catch (err) {
+    console.error("Error syncing database:", err);
+    throw err;
+  } finally {
+    client.release();
+  }
+}
+
+export { syncDatabase, REQUIRED_TABLES };
