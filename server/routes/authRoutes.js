@@ -5,9 +5,31 @@ import pool from '../config/db.js';
 
 const router = express.Router();
 const JWT_SECRET = process.env.JWT_SECRET || 'your_super_secret_key_hackathon';
+const AUTH_RATE_LIMIT_WINDOW_MS = 60 * 1000;
+const AUTH_RATE_LIMIT_MAX_REQUESTS = 10;
+const authRateLimitStore = new Map();
+
+const authRateLimit = (req, res, next) => {
+  const now = Date.now();
+  const key = `${req.ip}:${req.path}`;
+  const current = authRateLimitStore.get(key);
+
+  if (!current || current.resetAt <= now) {
+    authRateLimitStore.set(key, { count: 1, resetAt: now + AUTH_RATE_LIMIT_WINDOW_MS });
+    return next();
+  }
+
+  if (current.count >= AUTH_RATE_LIMIT_MAX_REQUESTS) {
+    return res.status(429).json({ message: 'Too many requests, please try again later' });
+  }
+
+  current.count += 1;
+  authRateLimitStore.set(key, current);
+  return next();
+};
 
 // Register User
-router.post('/register', async (req, res) => {
+router.post('/register', authRateLimit, async (req, res) => {
   try {
     const { email, password, name, phone } = req.body;
 
@@ -53,7 +75,7 @@ router.post('/register', async (req, res) => {
 });
 
 // Login User
-router.post('/login', async (req, res) => {
+router.post('/login', authRateLimit, async (req, res) => {
   try {
     const { email, password } = req.body;
 
