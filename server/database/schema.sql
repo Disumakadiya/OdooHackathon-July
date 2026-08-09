@@ -54,10 +54,11 @@ CREATE TABLE assets (
     asset_tag VARCHAR(50) UNIQUE NOT NULL,
     asset_name VARCHAR(150) NOT NULL,
     category_id INT REFERENCES asset_categories(id) ON DELETE SET NULL,
-    status VARCHAR(30) DEFAULT 'Available', -- Available, Allocated, Under Maintenance, Retired
+    status VARCHAR(30) DEFAULT 'Available' CHECK (status IN ('Available', 'Allocated', 'Under Maintenance', 'Retired')),
     location VARCHAR(100),
+    assigned_employee_id INT REFERENCES employees(id) ON DELETE SET NULL,
     purchase_date DATE,
-    cost DECIMAL(10, 2),
+    cost DECIMAL(10, 2) CHECK (cost IS NULL OR cost >= 0),
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 

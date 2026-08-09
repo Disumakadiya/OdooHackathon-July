@@ -9,6 +9,8 @@ import StatusBadge from "../../components/StatusBadge";
 import Table from "../../components/Table";
 import AssetActionMenu from "../../components/AssetActionMenu";
 import AssetDetailDrawer from "../../components/AssetDetailDrawer";
+import AssetActionModal from "../../components/AssetActionModal";
+import { useAssets } from "../../context/AssetContext";
 
 const categoryOptions = ["All", "IT Equipment", "Furniture", "Vehicles", "Industrial Tools", "Office Equipment"];
 const statusOptions = ["All", "Available", "Allocated", "Reserved", "Under Maintenance", "Lost", "Retired", "Disposed"];
@@ -31,6 +33,12 @@ const initialForm = {
 };
 
 export default function assetflow_asset_verification() {
+  const {
+    assets: backendAssets,
+    allocate,
+    transfer,
+    doReturn,
+  } = useAssets();
   const [search, setSearch] = useState("");
   const [filters, setFilters] = useState({ category: "All", status: "All", department: "All", location: "All" });
   const [assets, setAssets] = useState(assetVerificationData);
@@ -38,16 +46,40 @@ export default function assetflow_asset_verification() {
   const [viewOpen, setViewOpen] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
+  const [actionModal, setActionModal] = useState({ open: false, action: null, asset: null });
   const [selectedAsset, setSelectedAsset] = useState(null);
   const [form, setForm] = useState(initialForm);
+  const [actionError, setActionError] = useState("");
 
   useEffect(() => {
     document.title = "AssetFlow | Asset Verification";
   }, []);
 
+  const normalizedBackendAssets = useMemo(() => backendAssets.map((asset) => ({
+    id: asset.id,
+    assetTag: asset.asset_tag,
+    name: asset.asset_name,
+    serialNumber: asset.serial_number || "-",
+    qrCode: asset.asset_tag,
+    category: asset.category_name || "Uncategorized",
+    status: asset.status,
+    department: "Operations",
+    location: asset.location || "-",
+    assignedEmployee: asset.assigned_employee || "Unassigned",
+    lastUpdated: asset.created_at ? new Date(asset.created_at).toLocaleDateString() : "-",
+    condition: "Good",
+    description: `Registered asset ${asset.asset_tag}`,
+    allocationHistory: [],
+    maintenanceHistory: [],
+    stats: { usageDays: 0, moves: 0, maintenance: 0, openIssues: 0 },
+    source: "backend",
+  })), [backendAssets]);
+
+  const displayedAssets = normalizedBackendAssets.length > 0 ? normalizedBackendAssets : assets;
+
   const filteredAssets = useMemo(() => {
     const keyword = search.trim().toLowerCase();
-    return assets.filter((asset) => {
+    return displayedAssets.filter((asset) => {
       const matchesSearch =
         !keyword ||
         [asset.assetTag, asset.name, asset.serialNumber, asset.qrCode].join(" ").toLowerCase().includes(keyword);
@@ -57,16 +89,16 @@ export default function assetflow_asset_verification() {
       const matchesLocation = filters.location === "All" || asset.location === filters.location;
       return matchesSearch && matchesCategory && matchesStatus && matchesDepartment && matchesLocation;
     });
-  }, [assets, filters, search]);
+  }, [displayedAssets, filters, search]);
 
   const summary = useMemo(
     () => ({
-      totalCategories: new Set(assets.map((asset) => asset.category)).size,
-      totalAssets: assets.length,
-      active: assets.filter((asset) => ["Available", "Allocated", "Reserved"].includes(asset.status)).length,
-      inactive: assets.filter((asset) => ["Under Maintenance", "Lost", "Retired", "Disposed"].includes(asset.status)).length,
+      totalCategories: new Set(displayedAssets.map((asset) => asset.category)).size,
+      totalAssets: displayedAssets.length,
+      active: displayedAssets.filter((asset) => ["Available", "Allocated", "Reserved"].includes(asset.status)).length,
+      inactive: displayedAssets.filter((asset) => ["Under Maintenance", "Lost", "Retired", "Disposed"].includes(asset.status)).length,
     }),
-    [assets],
+    [displayedAssets],
   );
 
   const openCreateModal = () => {
@@ -89,6 +121,15 @@ export default function assetflow_asset_verification() {
   const openDeleteModal = (asset) => {
     setSelectedAsset(asset);
     setDeleteOpen(true);
+  };
+
+  const openActionModal = (action, asset) => {
+    setSelectedAsset(asset);
+    setActionModal({ open: true, action, asset });
+  };
+
+  const closeActionModal = () => {
+    setActionModal({ open: false, action: null, asset: null });
   };
 
   const handleSaveAsset = () => {
@@ -126,11 +167,7 @@ export default function assetflow_asset_verification() {
     setSelectedAsset(null);
   };
 
-  const updateSelectedAsset = (status, actionLabel) => {
-    if (!selectedAsset) {
-      return;
-    }
-
+  const updateLocalAssetAction = (assetToUpdate, updates, actionLabel) => {
     const nextHistory = {
       id: Date.now(),
       action: actionLabel,
@@ -140,12 +177,12 @@ export default function assetflow_asset_verification() {
 
     setAssets((current) =>
       current.map((asset) => {
-        if (asset.id !== selectedAsset.id) {
+        if (asset.id !== assetToUpdate.id) {
           return asset;
         }
         return {
           ...asset,
-          status,
+          ...updates,
           lastUpdated: "Jul 12, 2026",
           allocationHistory: [nextHistory, ...asset.allocationHistory],
         };
@@ -153,8 +190,51 @@ export default function assetflow_asset_verification() {
     );
   };
 
+  const handleConfirmAction = async (payload) => {
+    const assetToUpdate = actionModal.asset;
+    const action = actionModal.action;
+
+    if (!assetToUpdate) {
+      return;
+    }
+
+    setActionError("");
+    try {
+      if (assetToUpdate.source === "backend") {
+        if (action === "allocate") {
+          await allocate(assetToUpdate.id, payload);
+        } else if (action === "transfer") {
+          await transfer(assetToUpdate.id, payload);
+        } else if (action === "return") {
+          await doReturn(assetToUpdate.id, payload);
+        }
+      } else if (action === "allocate") {
+        updateLocalAssetAction(assetToUpdate, {
+          status: "Allocated",
+          assignedEmployee: payload.employee_id ? `Employee #${payload.employee_id}` : assetToUpdate.assignedEmployee,
+          location: payload.location || assetToUpdate.location,
+        }, "Allocate Asset");
+      } else if (action === "transfer") {
+        updateLocalAssetAction(assetToUpdate, {
+          assignedEmployee: payload.to_employee_id ? `Employee #${payload.to_employee_id}` : assetToUpdate.assignedEmployee,
+          location: payload.location || assetToUpdate.location,
+        }, "Transfer Asset");
+      } else if (action === "return") {
+        updateLocalAssetAction(assetToUpdate, {
+          status: "Available",
+          assignedEmployee: "Unassigned",
+          condition: payload.condition || assetToUpdate.condition,
+        }, "Return Asset");
+      }
+      setViewOpen(false);
+      closeActionModal();
+    } catch (err) {
+      setActionError(err.message || "Asset action failed.");
+    }
+  };
+
   const handleTransferRequest = () => {
-    updateSelectedAsset("Reserved", "Transfer Request Raised");
+    openActionModal("transfer", selectedAsset);
   };
 
   const columns = [
@@ -189,10 +269,10 @@ export default function assetflow_asset_verification() {
   const modalField = "w-full rounded-lg border border-outline-variant bg-surface-container-low px-4 py-3 font-label-md text-label-md outline-none transition-colors focus:border-primary";
 
   return (
-    <div className="font-body-md text-body-md">
+    <div className="flex h-screen overflow-hidden font-body-md text-body-md">
       <Sidebar />
 
-      <main className="min-h-screen md:ml-64">
+      <main className="flex-1 min-w-0 overflow-y-auto">
         <header className="sticky top-0 z-40 border-b border-outline-variant bg-surface/90 px-lg py-sm backdrop-blur">
           <div className="flex flex-col gap-sm lg:flex-row lg:items-center lg:justify-between">
             <div>
@@ -213,6 +293,12 @@ export default function assetflow_asset_verification() {
         </header>
 
         <div className="mx-auto max-w-max-width space-y-xl p-lg pb-2xl">
+          {actionError ? (
+            <div className="rounded-lg border border-error/30 bg-error/10 px-md py-sm text-error">
+              {actionError}
+            </div>
+          ) : null}
+
           <section className="grid grid-cols-1 gap-md sm:grid-cols-2 xl:grid-cols-4">
             <Card><p className="text-label-sm text-on-surface-variant">Total Categories</p><p className="mt-2 text-3xl font-bold text-primary">{summary.totalCategories}</p></Card>
             <Card><p className="text-label-sm text-on-surface-variant">Total Assets</p><p className="mt-2 text-3xl font-bold text-primary">{summary.totalAssets}</p></Card>
@@ -274,13 +360,13 @@ export default function assetflow_asset_verification() {
                   <button className="rounded-lg bg-primary px-4 py-2 text-sm font-bold text-on-primary" type="button" onClick={() => openViewModal(asset)}>
                     View Details
                   </button>
-                  <button className="rounded-lg border border-outline-variant px-4 py-2 text-sm font-bold text-primary" type="button" onClick={() => { setSelectedAsset(asset); updateSelectedAsset("Allocated", "Allocate Asset"); }}>
+                  <button className="rounded-lg border border-outline-variant px-4 py-2 text-sm font-bold text-primary" type="button" onClick={() => openActionModal("allocate", asset)}>
                     Allocate Asset
                   </button>
-                  <button className="rounded-lg border border-outline-variant px-4 py-2 text-sm font-bold text-primary" type="button" onClick={() => { setSelectedAsset(asset); updateSelectedAsset("Reserved", "Transfer Asset"); }}>
+                  <button className="rounded-lg border border-outline-variant px-4 py-2 text-sm font-bold text-primary" type="button" onClick={() => openActionModal("transfer", asset)}>
                     Transfer Asset
                   </button>
-                  <button className="rounded-lg border border-outline-variant px-4 py-2 text-sm font-bold text-on-surface" type="button" onClick={() => { setSelectedAsset(asset); updateSelectedAsset("Available", "Return Asset"); }}>
+                  <button className="rounded-lg border border-outline-variant px-4 py-2 text-sm font-bold text-on-surface" type="button" onClick={() => openActionModal("return", asset)}>
                     Return Asset
                   </button>
                 </div>
@@ -400,19 +486,18 @@ export default function assetflow_asset_verification() {
         asset={selectedAsset}
         open={viewOpen}
         onClose={() => setViewOpen(false)}
-        onAllocate={(asset) => {
-          setSelectedAsset(asset);
-          updateSelectedAsset("Allocated", "Allocate Asset");
-        }}
-        onTransfer={(asset) => {
-          setSelectedAsset(asset);
-          updateSelectedAsset("Reserved", "Transfer Asset");
-        }}
-        onReturn={(asset) => {
-          setSelectedAsset(asset);
-          updateSelectedAsset("Available", "Return Asset");
-        }}
+        onAllocate={(asset) => openActionModal("allocate", asset)}
+        onTransfer={(asset) => openActionModal("transfer", asset)}
+        onReturn={(asset) => openActionModal("return", asset)}
         onTransferRequest={handleTransferRequest}
+      />
+
+      <AssetActionModal
+        action={actionModal.action}
+        asset={actionModal.asset}
+        onClose={closeActionModal}
+        onConfirm={handleConfirmAction}
+        open={actionModal.open}
       />
     </div>
   );

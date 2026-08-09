@@ -48,10 +48,10 @@ export default function assetflow_asset_categories() {
   function handleDelete(cat) { setCategories(categories.filter(c => c.id !== cat.id)); }
 
   return (
-    <div className="bg-surface-container-low min-h-screen font-body-md text-on-surface">
+    <div className="flex h-screen overflow-hidden bg-surface-container-low font-body-md text-on-surface">
       <Sidebar />
 
-      <main className="ml-64 min-h-screen">
+      <main className="flex-1 min-w-0 overflow-y-auto">
         {/* TopAppBar */}
         <header className="sticky top-0 z-40 bg-surface/80 backdrop-blur-md flex justify-between items-center w-full px-lg py-sm border-b border-outline-variant">
           <div className="flex items-center gap-md">

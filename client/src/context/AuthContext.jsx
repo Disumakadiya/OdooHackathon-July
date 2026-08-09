@@ -8,16 +8,12 @@ export const AuthProvider = ({ children }) => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Check if token exists on mount
     const token = localStorage.getItem('token');
-    if (token) {
+    if (token && isTokenValid(token)) {
       setIsAuthenticated(true);
-      try {
-        const payload = JSON.parse(atob(token.split('.')[1]));
-        setUser(payload.user);
-      } catch (e) {
-        console.error("Failed to parse token", e);
-      }
+      setUser(getTokenUser(token));
+    } else {
+      localStorage.removeItem('token');
     }
     setLoading(false);
   }, []);
@@ -25,12 +21,7 @@ export const AuthProvider = ({ children }) => {
   const login = (token) => {
     localStorage.setItem('token', token);
     setIsAuthenticated(true);
-    try {
-      const payload = JSON.parse(atob(token.split('.')[1]));
-      setUser(payload.user);
-    } catch (e) {
-      console.error("Failed to parse token", e);
-    }
+    setUser(getTokenUser(token));
   };
 
   const logout = () => {
@@ -49,5 +40,24 @@ export const AuthProvider = ({ children }) => {
     </AuthContext.Provider>
   );
 };
+
+function getTokenUser(token) {
+  try {
+    const payload = JSON.parse(atob(token.split('.')[1]));
+    return payload.user || null;
+  } catch (e) {
+    return null;
+  }
+}
+
+function isTokenValid(token) {
+  try {
+    const payload = JSON.parse(atob(token.split('.')[1]));
+    if (!payload.exp) return false;
+    return payload.exp * 1000 > Date.now();
+  } catch (e) {
+    return false;
+  }
+}
 
 export const useAuth = () => useContext(AuthContext);

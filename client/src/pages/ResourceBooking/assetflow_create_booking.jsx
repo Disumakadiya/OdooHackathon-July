@@ -68,10 +68,11 @@ export default function assetflow_create_booking() {
   const closePanel = () => { setPanelOpen(false); document.body.style.overflow = ''; };
 
   return (
-    <div className="bg-surface-container-low text-on-surface font-body-md text-body-md overflow-x-hidden">
+    <div className="flex h-screen overflow-hidden bg-surface-container-low text-on-surface font-body-md text-body-md">
       <Sidebar />
 
-      <header className="sticky top-0 z-40 flex justify-between items-center w-full px-lg py-sm bg-surface border-b border-outline-variant md:ml-64 md:w-[calc(100%-16rem)]">
+      <div className="flex-1 min-w-0 flex flex-col overflow-hidden">
+        <header className="sticky top-0 z-40 flex justify-between items-center w-full px-lg py-sm bg-surface border-b border-outline-variant">
         <div className="flex items-center gap-md">
           <button className="md:hidden p-sm text-on-surface-variant"><span className="material-symbols-outlined">menu</span></button>
           <h2 className="font-headline-md text-headline-md font-bold text-primary">Resource Booking</h2>
@@ -82,7 +83,7 @@ export default function assetflow_create_booking() {
         </div>
       </header>
 
-      <main className="md:ml-64 p-lg min-h-[calc(100vh-64px)] max-w-max-width mx-auto">
+      <main className="flex-1 overflow-y-auto p-lg max-w-max-width mx-auto">
         {/* Booking Overview */}
         <div className="grid grid-cols-1 md:grid-cols-12 gap-lg mb-xl">
           <div className="md:col-span-8 bg-surface-container-lowest rounded-xl p-lg soft-shadow flex flex-col justify-between relative overflow-hidden">
@@ -180,6 +181,7 @@ export default function assetflow_create_booking() {
           </div>
         </div>
       </main>
+      </div>
 
       {/* Overlay */}
       {panelOpen && (

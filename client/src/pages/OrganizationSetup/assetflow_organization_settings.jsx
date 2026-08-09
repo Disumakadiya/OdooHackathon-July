@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
-import Sidebar from '../../components/Sidebar';
 
 export default function assetflow_organization_settings() {
   const { logout } = useAuth();

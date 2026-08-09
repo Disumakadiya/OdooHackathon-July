@@ -12,11 +12,12 @@ export default function assetflow_maintenance_requests() {
   useEffect(() => { document.title = 'Maintenance Requests - AssetFlow'; }, []);
 
   return (
-    <div className="font-body-md text-body-md overflow-x-hidden">
+    <div className="flex h-screen overflow-hidden font-body-md text-body-md">
       <Sidebar />
 
-      <header className="md:ml-64 sticky top-0 z-40 bg-surface border-b border-outline-variant w-full max-w-max-width mx-auto flex justify-between items-center px-lg py-sm">
-        <div className="flex items-center gap-md">
+      <div className="flex-1 min-w-0 flex flex-col overflow-hidden">
+        <header className="sticky top-0 z-40 bg-surface border-b border-outline-variant w-full flex justify-between items-center px-lg py-sm">
+          <div className="flex items-center gap-md">
           <button className="md:hidden p-sm hover:bg-surface-container-low rounded-full">
             <span className="material-symbols-outlined">menu</span>
           </button>
@@ -36,7 +37,7 @@ export default function assetflow_maintenance_requests() {
         </div>
       </header>
 
-      <main className="md:ml-64 min-h-screen pt-xl pb-xl px-lg">
+      <main className="flex-1 overflow-y-auto pt-xl pb-xl px-lg">
         <div className="max-w-max-width mx-auto">
           <div className="flex flex-col md:flex-row md:items-end justify-between mb-xl gap-md">
             <div>
@@ -160,6 +161,7 @@ export default function assetflow_maintenance_requests() {
           </div>
         </div>
       </main>
+      </div>
 
       <button className="md:hidden fixed bottom-lg right-lg w-14 h-14 bg-primary text-white rounded-full flex items-center justify-center custom-shadow active:scale-90 transition-transform z-50">
         <span className="material-symbols-outlined">add</span>

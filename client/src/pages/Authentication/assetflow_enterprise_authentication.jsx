@@ -123,7 +123,8 @@ void main() {
     setBtnText(isLogin ? 'Authenticating...' : 'Registering...');
     
     try {
-      const endpoint = isLogin ? 'http://localhost:5000/api/auth/login' : 'http://localhost:5000/api/auth/register';
+      const base = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5001/api';
+      const endpoint = isLogin ? `${base}/auth/login` : `${base}/auth/register`;
       const payload = isLogin ? { email, password } : { email, password, name, phone };
 
       const response = await fetch(endpoint, {

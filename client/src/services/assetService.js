@@ -70,7 +70,7 @@ export async function allocateAsset(id, allocationData) {
     return mockAssets.find((a) => a.id === id);
   }
   const { data } = await api.post(`/assets/${id}/allocate`, allocationData);
-  return data;
+  return data.asset;
 }
 
 export async function transferAsset(id, transferData) {
@@ -85,7 +85,7 @@ export async function transferAsset(id, transferData) {
     return mockAssets.find((a) => a.id === id);
   }
   const { data } = await api.post(`/assets/${id}/transfer`, transferData);
-  return data;
+  return data.asset;
 }
 
 export async function returnAsset(id, returnData) {
@@ -100,5 +100,5 @@ export async function returnAsset(id, returnData) {
     return mockAssets.find((a) => a.id === id);
   }
   const { data } = await api.post(`/assets/${id}/return`, returnData);
-  return data;
+  return data.asset;
 }

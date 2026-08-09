@@ -13,9 +13,9 @@ export default function assetflow_employee_directory() {
   useEffect(() => { document.title = 'Employee Directory | AssetFlow'; }, []);
 
   return (
-    <div className="font-body-md text-body-md">
+    <div className="flex h-screen overflow-hidden font-body-md text-body-md">
       <Sidebar />
-      <main className="md:ml-64 min-h-screen bg-background transition-all duration-300">
+      <main className="flex-1 min-w-0 overflow-y-auto bg-background transition-all duration-300">
         <header className="sticky top-0 z-40 bg-surface border-b border-outline-variant flex justify-between items-center w-full px-lg py-sm">
           <div className="flex items-center gap-lg flex-1">
             <div className="relative w-full max-w-md">

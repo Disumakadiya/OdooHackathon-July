@@ -9,6 +9,7 @@ import bookingRoutes from './routes/booking.routes.js';
 import maintenanceRoutes from './routes/maintenance.routes.js';
 import notificationRoutes from './routes/notification.routes.js';
 import assetsRoutes from './routes/assets.routes.js';
+import categoriesRoutes from './routes/categories.routes.js';
 import dashboardRoutes from './routes/dashboard.routes.js';
 import { notFound, errorHandler } from './middleware/index.js';
 
@@ -23,7 +24,7 @@ const allowedOrigin = process.env.CORS_ORIGIN;
 app.use(
   cors(
     allowedOrigin
-      ? { origin: allowedOrigin }
+      ? { origin: allowedOrigin, credentials: true }
       : undefined
   )
 );
@@ -32,6 +33,15 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 // Routes
+app.get('/', (req, res) => {
+  res.status(200).json({
+    status: 'ok',
+    service: 'assetflow-backend',
+    message: 'AssetFlow API is running. Use /health or /api/* endpoints.',
+    timestamp: new Date().toISOString(),
+  });
+});
+
 app.get('/health', (req, res) => {
   res.status(200).json({
     status: 'ok',
@@ -45,6 +55,7 @@ app.use('/api/bookings', bookingRoutes);
 app.use('/api/maintenances', maintenanceRoutes);
 app.use('/api/notifications', notificationRoutes);
 app.use('/api/assets', assetsRoutes);
+app.use('/api/categories', categoriesRoutes);
 app.use('/api/dashboard', dashboardRoutes);
 
 app.use(notFound);
