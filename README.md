@@ -44,7 +44,7 @@ AssetFlow aims to simplify enterprise asset management by providing a scalable, 
 ## 🛠️ Tech Stack
 
 <details>
-<summary><b>💻 Frontend</b></summary>
+<summary><b>💻 client </b></summary>
 
 - **React.js** — Next-gen UI library
 - **Vite** — Lightning fast build tool
