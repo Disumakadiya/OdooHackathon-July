@@ -1,6 +1,6 @@
 <div align="center">
   <img src="https://img.icons8.com/color/96/000000/product-management.png" alt="AssetFlow Logo" width="100"/>
-  <h1>AssetFlow 🚀</h1>
+  <h1>OpsFlow 🚀</h1>
   <p><strong>An Enterprise Asset & Resource Management platform developed for the Odoo Hackathon 2026.</strong></p>
 
   <p>
@@ -16,7 +16,7 @@
 
 ## 🎯 Vision
 
-AssetFlow aims to simplify enterprise asset management by providing a scalable, secure, and user-friendly platform that improves operational efficiency, enhances resource utilization, and supports informed decision-making through centralized data management.
+OpsFlow aims to simplify enterprise asset management by providing a scalable, secure, and user-friendly platform that improves operational efficiency, enhances resource utilization, and supports informed decision-making through centralized data management.
 
 ---
 
@@ -126,5 +126,5 @@ Developed collaboratively during the **Odoo Hackathon 2026**, with contributions
 For demonstration and educational purposes during the **Odoo Hackathon 2026**.
 
 <div align="center">
-  <p>Built with ❤️ by the AssetFlow Team</p>
+  <p>Built with ❤️ by the OpsFlow Team</p>
 </div>
