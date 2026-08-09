@@ -42,10 +42,10 @@ export default function assetflow_user_role_management() {
   useEffect(() => { document.title = 'User Role Management - AssetFlow'; }, []);
 
   return (
-    <div className="min-h-screen bg-surface-container-low">
+    <div className="flex h-screen overflow-hidden bg-surface-container-low">
       <Sidebar />
 
-      <main className="md:ml-64 min-h-screen">
+      <main className="flex-1 min-w-0 overflow-y-auto">
         <header className="sticky top-0 z-40 bg-surface border-b border-outline-variant px-lg py-sm flex justify-between items-center w-full max-w-max-width mx-auto h-16">
           <div className="flex items-center gap-4">
             <div className="relative flex items-center">

@@ -54,10 +54,10 @@ export default function assetflow_audit_dashboard() {
   ];
 
   return (
-    <div className="font-body-md text-body-md">
+    <div className="flex h-screen overflow-hidden font-body-md text-body-md">
       <Sidebar />
 
-      <main className="min-h-screen md:ml-64">
+      <main className="flex-1 min-w-0 overflow-y-auto">
         <header className="sticky top-0 z-40 border-b border-outline-variant bg-surface px-lg py-sm">
           <div className="flex flex-col gap-sm lg:flex-row lg:items-center lg:justify-between">
             <div className="w-full max-w-xl">

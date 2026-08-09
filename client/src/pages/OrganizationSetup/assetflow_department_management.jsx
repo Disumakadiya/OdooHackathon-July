@@ -20,10 +20,10 @@ export default function assetflow_department_management() {
 
   return (
     <div className="font-body-md text-body-md">
-      <div className="flex min-h-screen">
+      <div className="flex h-screen overflow-hidden">
         <Sidebar />
 
-        <main className="flex-1 md:ml-64 flex flex-col min-h-screen">
+        <main className="flex-1 min-w-0 overflow-y-auto flex flex-col">
           {/* TopNavBar */}
           <header className="sticky top-0 z-40 bg-surface border-b border-outline-variant flex justify-between items-center w-full px-lg py-sm">
             <div className="flex items-center gap-lg flex-1">

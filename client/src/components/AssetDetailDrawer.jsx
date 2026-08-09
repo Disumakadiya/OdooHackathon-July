@@ -7,9 +7,12 @@ export default function AssetDetailDrawer({ asset, open, onClose, onAllocate, on
   }
 
   const hasAllocation = asset.status === "Allocated";
+  const allocationHistory = asset.allocationHistory || [];
+  const maintenanceHistory = asset.maintenanceHistory || [];
+  const stats = asset.stats || { usageDays: 0, moves: 0, maintenance: 0, openIssues: 0 };
 
   return (
-    <Modal open={open} onClose={onClose} size="xl" title={`Asset Details • ${asset.assetTag}`}>
+    <Modal open={open} onClose={onClose} size="xl" title={`Asset Details - ${asset.assetTag}`}>
       <div className="grid gap-6 lg:grid-cols-[1.2fr_0.8fr]">
         <div className="space-y-5">
           <div className="rounded-2xl border border-outline-variant bg-surface-container-low p-5">
@@ -47,7 +50,7 @@ export default function AssetDetailDrawer({ asset, open, onClose, onAllocate, on
               <div>
                 <p className="mb-2 text-sm font-bold text-on-surface">Allocation History</p>
                 <div className="space-y-3">
-                  {asset.allocationHistory.map((entry) => (
+                  {allocationHistory.map((entry) => (
                     <div key={entry.id} className="rounded-xl border border-outline-variant bg-surface p-4">
                       <div className="flex items-center justify-between gap-3">
                         <p className="font-label-md text-label-md text-on-surface">{entry.action}</p>
@@ -61,7 +64,7 @@ export default function AssetDetailDrawer({ asset, open, onClose, onAllocate, on
               <div>
                 <p className="mb-2 text-sm font-bold text-on-surface">Maintenance History</p>
                 <div className="space-y-3">
-                  {asset.maintenanceHistory.map((entry) => (
+                  {maintenanceHistory.map((entry) => (
                     <div key={entry.id} className="rounded-xl border border-outline-variant bg-surface p-4">
                       <div className="flex items-center justify-between gap-3">
                         <p className="font-label-md text-label-md text-on-surface">{entry.action}</p>
@@ -95,10 +98,10 @@ export default function AssetDetailDrawer({ asset, open, onClose, onAllocate, on
             <h4 className="font-headline-md text-headline-md text-primary">Asset Statistics</h4>
             <div className="mt-4 grid grid-cols-2 gap-3">
               {[
-                ["Usage Days", asset.stats.usageDays],
-                ["Moves", asset.stats.moves],
-                ["Maintenance", asset.stats.maintenance],
-                ["Open Issues", asset.stats.openIssues],
+                ["Usage Days", stats.usageDays],
+                ["Moves", stats.moves],
+                ["Maintenance", stats.maintenance],
+                ["Open Issues", stats.openIssues],
               ].map(([label, value]) => (
                 <div key={label} className="rounded-xl border border-outline-variant bg-surface p-4 text-center">
                   <p className="text-xs uppercase tracking-wide text-outline">{label}</p>

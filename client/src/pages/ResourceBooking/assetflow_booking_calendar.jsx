@@ -40,7 +40,8 @@ export default function assetflow_booking_calendar() {
   const pendingNotifications = notifications.slice(0, 2);
 
   return (
-    <div className="font-body-md text-body-md overflow-x-hidden">
+    <div className="flex h-screen overflow-hidden font-body-md text-body-md">
+      <div className="flex-1 min-w-0 flex flex-col overflow-hidden">
       <nav className="sticky top-0 z-40 flex justify-between items-center w-full px-lg py-sm bg-surface border-b border-outline-variant max-w-full">
         <div className="flex items-center gap-md">
           <span className="text-headline-md font-headline-md font-bold text-primary">AssetFlow</span>
@@ -60,10 +61,10 @@ export default function assetflow_booking_calendar() {
         </div>
       </nav>
 
-      <div className="flex">
+      <div className="flex flex-1 min-h-0">
         <Sidebar />
 
-        <main className="flex-1 md:ml-64 p-lg max-w-max-width mx-auto">
+        <main className="flex-1 min-w-0 overflow-y-auto p-lg max-w-max-width mx-auto">
           <header className="mb-xl flex flex-col md:flex-row md:items-end justify-between gap-md">
             <div>
               <h1 className="font-headline-lg text-headline-lg text-primary tracking-tight mb-sm">Resource Booking</h1>
@@ -240,6 +241,7 @@ export default function assetflow_booking_calendar() {
             </div>
           </section>
         </main>
+      </div>
       </div>
 
       <button onClick={handleFabClick} className="fixed bottom-lg right-lg bg-primary text-white flex items-center gap-md px-lg py-md rounded-full shadow-xl hover:scale-105 active:scale-95 transition-all z-50 group">

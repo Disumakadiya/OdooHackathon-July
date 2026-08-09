@@ -47,10 +47,10 @@ export default function assetflow_admin_dashboard() {
   const maxMaintenanceCost = Math.max(...maintenanceCost.map((item) => item.cost));
 
   return (
-    <div className="font-body-md text-body-md overflow-x-hidden">
+    <div className="flex h-screen overflow-hidden font-body-md text-body-md">
       <Sidebar />
 
-      <main className="min-h-screen md:ml-64">
+      <main className="flex-1 min-w-0 overflow-y-auto">
         <header className="sticky top-0 z-40 flex items-center justify-between gap-md border-b border-outline-variant bg-surface px-lg py-sm">
           <div className="w-full max-w-xl">
             <SearchBar

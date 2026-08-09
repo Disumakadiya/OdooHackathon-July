@@ -8,10 +8,10 @@ export default function assetflow_maintenance_approval() {
   useEffect(() => { document.title = 'Maintenance Approval | AssetFlow'; }, []);
 
   return (
-    <div className="font-body-md text-body-md">
+    <div className="flex h-screen overflow-hidden font-body-md text-body-md">
       <Sidebar />
 
-      <main className="md:ml-64 min-h-screen">
+      <main className="flex-1 min-w-0 overflow-y-auto">
         <header className="sticky top-0 z-40 bg-surface border-b border-outline-variant flex justify-between items-center w-full px-lg py-sm">
           <div className="flex items-center gap-md">
             <button className="md:hidden p-sm hover:bg-surface-container-low rounded-full">

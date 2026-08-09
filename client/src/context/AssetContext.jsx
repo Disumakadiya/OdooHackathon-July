@@ -18,7 +18,6 @@ export function AssetProvider({ children }) {
       setAssets(data);
     } catch (err) {
       setError(err.message);
-      toast.showError("Failed to load assets");
     } finally {
       setLoading(false);
     }
@@ -100,10 +99,10 @@ export function AssetProvider({ children }) {
   }, [toast]);
 
   const summary = useMemo(() => ({
-    totalCategories: new Set(assets.map((a) => a.category)).size,
+    totalCategories: new Set(assets.map((a) => a.category_id || a.category_name).filter(Boolean)).size,
     totalAssets: assets.length,
-    active: assets.filter((a) => ["Available", "Allocated", "Reserved"].includes(a.status)).length,
-    inactive: assets.filter((a) => ["Under Maintenance", "Lost", "Retired", "Disposed"].includes(a.status)).length,
+    active: assets.filter((a) => ["Available", "Allocated"].includes(a.status)).length,
+    inactive: assets.filter((a) => ["Under Maintenance", "Retired"].includes(a.status)).length,
   }), [assets]);
 
   const value = useMemo(() => ({
