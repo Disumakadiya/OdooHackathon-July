@@ -114,10 +114,22 @@ CREATE TABLE maintenance_requests (
     requester_id INT REFERENCES employees(id) ON DELETE SET NULL,
     description TEXT NOT NULL,
     priority VARCHAR(20) DEFAULT 'Medium', -- Low, Medium, High, Critical
-    status VARCHAR(30) DEFAULT 'Open', -- Open, In Progress, Resolved
+    status VARCHAR(30) DEFAULT 'Pending', -- Pending, Approved, Rejected, Technician Assigned, In Progress, Resolved
     cost DECIMAL(10, 2),
+    approved_by INT REFERENCES users(id) ON DELETE SET NULL,
+    approved_at TIMESTAMP,
+    rejected_by INT REFERENCES users(id) ON DELETE SET NULL,
+    rejected_at TIMESTAMP,
+    rejection_reason TEXT,
+    technician_id INT REFERENCES employees(id) ON DELETE SET NULL,
+    assigned_by INT REFERENCES users(id) ON DELETE SET NULL,
+    assigned_at TIMESTAMP,
+    started_at TIMESTAMP,
+    resolution_notes TEXT,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    resolved_at TIMESTAMP
+    updated_at TIMESTAMP,
+    resolved_at TIMESTAMP,
+    photo_url VARCHAR(255)
 );
 
 -- ==========================================

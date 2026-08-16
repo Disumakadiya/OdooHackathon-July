@@ -61,7 +61,7 @@ export default function AppRoutes() {
         <Route path="/assetflow_booking_calendar" element={<AssetflowBookingCalendar />} />
         <Route path="/assetflow_create_booking" element={<AssetflowCreateBooking />} />
         <Route path="/assetflow_maintenance_requests" element={<AssetflowMaintenanceRequests />} />
-        <Route path="/assetflow_maintenance_approval" element={<AssetflowMaintenanceApproval />} />
+        <Route path="/assetflow_maintenance_approval/:id" element={<AssetflowMaintenanceApproval />} />
         <Route path="/assetflow_audit_dashboard" element={<AssetflowAuditDashboard />} />
         <Route path="/assetflow_discrepancy_report" element={<AssetflowDiscrepancyReport />} />
         <Route path="/assetflow_reports" element={<AssetflowReports />} />

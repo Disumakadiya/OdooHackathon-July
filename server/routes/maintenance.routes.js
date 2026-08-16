@@ -14,4 +14,11 @@ router.get('/:id', validateMaintenanceId, maintenanceController.getMaintenanceBy
 router.put('/:id', validateMaintenanceId, validateUpdateMaintenance, maintenanceController.updateMaintenance);
 router.delete('/:id', validateMaintenanceId, maintenanceController.deleteMaintenance);
 
+// Workflow transitions
+router.patch('/:id/approve', validateMaintenanceId, maintenanceController.approveMaintenance);
+router.patch('/:id/reject', validateMaintenanceId, maintenanceController.rejectMaintenance);
+router.patch('/:id/assign', validateMaintenanceId, maintenanceController.assignTechnician);
+router.patch('/:id/start', validateMaintenanceId, maintenanceController.startMaintenance);
+router.patch('/:id/resolve', validateMaintenanceId, maintenanceController.resolveMaintenance);
+
 export default router;

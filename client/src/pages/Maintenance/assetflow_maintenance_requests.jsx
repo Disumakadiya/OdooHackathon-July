@@ -1,15 +1,77 @@
-import { useEffect } from 'react';
+import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import Sidebar from '../../components/Sidebar';
-
-const tickets = [
-  { id: 'MT-8942', priority: 'Critical', priorityColor: 'bg-error-container text-on-error-container', title: 'HVAC System Failure - Section B4', reported: 'Reported 2 hours ago by Facilities Lead', status: 'In Progress', statusColor: 'bg-surface-container-highest text-on-surface-variant', assignee: { img: 'https://lh3.googleusercontent.com/aida-public/AB6AXuCJgI2B1UzsAsHQh0oOp4HP2xR2-rJcpubW1Q3BOxz95K96rkz6UN9qL-FpStc0Atsb1y7_aFGr1c5hhlm5lsGTHwrcba_v35uSIxpPc0nHZL4IKlaa0LhCpaCt7n4lQyoYG2tjrYpw1MX4oY8NxC75jmYt_Blmnfy8IellEf53wpmka5bt9lC0xVaKYspy0PxiU-XimfRou_N2cnRR_y6KZ1jgu7-5UlAHr07l_EhOs6t0Vqs_NhG1Zw', name: 'Marcus Chen', role: 'Lead Engineer' } },
-  { id: 'MT-8941', priority: 'Normal', priorityColor: 'bg-secondary-container text-on-secondary-container', title: 'Server Rack #12 - Battery Replacement', reported: 'Reported 5 hours ago by IT Dept', status: 'Pending', statusColor: 'bg-surface-container-high text-on-surface-variant', assignee: null },
-  { id: 'MT-8940', priority: 'Low', priorityColor: 'bg-tertiary-container/10 text-tertiary', title: 'Workspace A2 - Ergonomic Adjustment', reported: 'Reported 1 day ago by Sarah Jenkins', status: 'Complete', statusColor: 'bg-tertiary-container text-white', assignee: { img: 'https://lh3.googleusercontent.com/aida-public/AB6AXuCEcxX6sg8H6xnHLrFtaog4dBgSGtxBRI8uqtJK5xf1xxzBHxm8EtLs6H-NEsdM04hn4e2MffEmHPqCJfVZtVvKdxNEqnFn4YPy0CwW6TeDPkZlupV6uQDNxsPOkaXDN-dZR3BFPjzaCovSn1YgWrIINwY-KiBP1rlN3CF49IP_b51EaoEpHnHtEZIahNBt88nz_5cA4d-FfC_QRO8eazhVSb0r-XkBAbpqTPuXktl9nE8sTij8qXXpVg', name: 'Jessica Vane', role: 'Field Tech' } },
-  { id: 'MT-8939', priority: 'High', priorityColor: 'bg-error-container/20 text-error', title: 'Freight Elevator 2 - Sensor Malfunction', reported: 'Reported 2 days ago by Logistics Team', status: 'In Progress', statusColor: 'bg-surface-container-highest text-on-surface-variant', assignee: { img: 'https://lh3.googleusercontent.com/aida-public/AB6AXuDLIpTTVFpV5vGxxoEoNYN27y_WPyiDhMPB7ktqt42rz-7rttsiQ7b4CqGIMda7uSVbklQqWCJ_bVBohR7n8Ww4eO4J3LZzB_ELkgQUn5KRv1TC2jSib2iE5u3u796zsiVfFvAoDFr_YiS3T8GNroEiBVy4J257Zk77tHHE_bJ0HrmXWy9V1hzAk0H8RQ6EZrMHKDCT2Ib6xBr23g_G_eUMPb0Y0og0mk7nYwbUm0-bDucyhh96EBPvKA', name: 'Robert Gale', role: 'Master Tech' } },
-];
+import { getMaintenanceRequests, createMaintenanceRequest } from '../../services/maintenanceService';
 
 export default function assetflow_maintenance_requests() {
-  useEffect(() => { document.title = 'Maintenance Requests - AssetFlow'; }, []);
+  const navigate = useNavigate();
+  const [requests, setRequests] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [activeTab, setActiveTab] = useState('All Tickets');
+  
+  // New request state
+  const [newRequest, setNewRequest] = useState({
+    asset_id: '',
+    description: '',
+    priority: 'Medium'
+  });
+
+  useEffect(() => { 
+    document.title = 'Maintenance Requests - AssetFlow'; 
+    fetchRequests();
+  }, []);
+
+  const fetchRequests = async () => {
+    try {
+      setLoading(true);
+      const data = await getMaintenanceRequests();
+      setRequests(data || []);
+    } catch (error) {
+      console.error("Failed to fetch maintenance requests", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    try {
+      await createMaintenanceRequest({
+        asset_id: parseInt(newRequest.asset_id, 10),
+        description: newRequest.description,
+        priority: newRequest.priority
+      });
+      setIsModalOpen(false);
+      setNewRequest({ asset_id: '', description: '', priority: 'Medium' });
+      fetchRequests();
+    } catch (error) {
+      console.error("Failed to create request", error);
+      alert(error.response?.data?.message || "Failed to create request");
+    }
+  };
+
+  const getPriorityColor = (priority) => {
+    switch (priority) {
+      case 'Critical': return 'bg-error-container text-on-error-container';
+      case 'High': return 'bg-error-container/20 text-error';
+      case 'Medium': return 'bg-secondary-container text-on-secondary-container';
+      case 'Low': return 'bg-tertiary-container/10 text-tertiary';
+      default: return 'bg-surface-container-high text-on-surface-variant';
+    }
+  };
+
+  const getStatusColor = (status) => {
+    switch (status) {
+      case 'Pending': return 'bg-surface-container-high text-on-surface-variant';
+      case 'Approved': return 'bg-secondary-container text-on-secondary-container';
+      case 'Rejected': return 'bg-error-container text-on-error-container';
+      case 'Technician Assigned': return 'bg-tertiary-container text-white';
+      case 'In Progress': return 'bg-surface-container-highest text-on-surface-variant';
+      case 'Resolved': return 'bg-primary text-white';
+      default: return 'bg-surface-container-high text-on-surface-variant';
+    }
+  };
 
   return (
     <div className="flex h-screen overflow-hidden font-body-md text-body-md">
@@ -18,154 +80,175 @@ export default function assetflow_maintenance_requests() {
       <div className="flex-1 min-w-0 flex flex-col overflow-hidden">
         <header className="sticky top-0 z-40 bg-surface border-b border-outline-variant w-full flex justify-between items-center px-lg py-sm">
           <div className="flex items-center gap-md">
-          <button className="md:hidden p-sm hover:bg-surface-container-low rounded-full">
-            <span className="material-symbols-outlined">menu</span>
-          </button>
-          <div className="relative group hidden sm:block">
-            <span className="material-symbols-outlined absolute left-sm top-1/2 -translate-y-1/2 text-outline">search</span>
-            <input className="pl-xl pr-md py-sm rounded-lg border border-outline-variant bg-surface-container-low text-label-md focus:outline-none focus:ring-2 focus:ring-secondary/20 focus:border-primary transition-all w-64 md:w-80" placeholder="Search tickets..." type="text" />
-          </div>
-        </div>
-        <div className="flex items-center gap-md">
-          <button className="p-sm text-on-surface-variant hover:bg-surface-container-low transition-colors rounded-full relative">
-            <span className="material-symbols-outlined">notifications</span>
-            <span className="absolute top-2 right-2 w-2 h-2 bg-error rounded-full border border-surface"></span>
-          </button>
-          <button className="p-sm text-on-surface-variant hover:bg-surface-container-low transition-colors rounded-full">
-            <span className="material-symbols-outlined">help</span>
-          </button>
-        </div>
-      </header>
-
-      <main className="flex-1 overflow-y-auto pt-xl pb-xl px-lg">
-        <div className="max-w-max-width mx-auto">
-          <div className="flex flex-col md:flex-row md:items-end justify-between mb-xl gap-md">
-            <div>
-              <h2 className="font-headline-lg text-headline-lg text-primary mb-xs">Maintenance Requests</h2>
-              <p className="text-on-surface-variant font-body-md">Manage equipment health and ongoing facility maintenance tasks.</p>
+            <button className="md:hidden p-sm hover:bg-surface-container-low rounded-full">
+              <span className="material-symbols-outlined">menu</span>
+            </button>
+            <div className="relative group hidden sm:block">
+              <span className="material-symbols-outlined absolute left-sm top-1/2 -translate-y-1/2 text-outline">search</span>
+              <input className="pl-xl pr-md py-sm rounded-lg border border-outline-variant bg-surface-container-low text-label-md focus:outline-none focus:ring-2 focus:ring-secondary/20 focus:border-primary transition-all w-64 md:w-80" placeholder="Search tickets..." type="text" />
             </div>
-            <button className="flex items-center gap-sm px-lg py-md bg-secondary text-on-secondary rounded-lg font-label-md custom-shadow hover:opacity-90 active:scale-95 transition-all">
-              <span className="material-symbols-outlined">add</span>
-              New Request
+          </div>
+          <div className="flex items-center gap-md">
+            <button className="p-sm text-on-surface-variant hover:bg-surface-container-low transition-colors rounded-full relative">
+              <span className="material-symbols-outlined">notifications</span>
+              <span className="absolute top-2 right-2 w-2 h-2 bg-error rounded-full border border-surface"></span>
+            </button>
+            <button className="p-sm text-on-surface-variant hover:bg-surface-container-low transition-colors rounded-full">
+              <span className="material-symbols-outlined">help</span>
             </button>
           </div>
+        </header>
 
-          {/* Stats Grid */}
-          <div className="grid grid-cols-12 gap-gutter mb-xl">
-            <div className="col-span-12 md:col-span-3 bg-white p-lg rounded-xl custom-shadow border border-outline-variant/20 flex flex-col justify-between">
-              <span className="text-outline font-label-sm uppercase tracking-tighter">Active Tickets</span>
-              <div className="mt-md">
-                <span className="text-display font-display text-primary leading-none">24</span>
-                <div className="flex items-center gap-xs text-secondary mt-xs">
-                  <span className="material-symbols-outlined text-[16px]">trending_up</span>
-                  <span className="text-label-sm">8% vs last week</span>
+        <main className="flex-1 overflow-y-auto pt-xl pb-xl px-lg relative">
+          <div className="max-w-max-width mx-auto">
+            <div className="flex flex-col md:flex-row md:items-end justify-between mb-xl gap-md">
+              <div>
+                <h2 className="font-headline-lg text-headline-lg text-primary mb-xs">Maintenance Requests</h2>
+                <p className="text-on-surface-variant font-body-md">Manage equipment health and ongoing facility maintenance tasks.</p>
+              </div>
+              <button 
+                onClick={() => setIsModalOpen(true)}
+                className="flex items-center gap-sm px-lg py-md bg-secondary text-on-secondary rounded-lg font-label-md custom-shadow hover:opacity-90 active:scale-95 transition-all">
+                <span className="material-symbols-outlined">add</span>
+                New Request
+              </button>
+            </div>
+
+            {/* Stats Grid */}
+            <div className="grid grid-cols-12 gap-gutter mb-xl">
+              <div className="col-span-12 md:col-span-3 bg-white p-lg rounded-xl custom-shadow border border-outline-variant/20 flex flex-col justify-between">
+                <span className="text-outline font-label-sm uppercase tracking-tighter">Active Tickets</span>
+                <div className="mt-md">
+                  <span className="text-display font-display text-primary leading-none">{requests.length}</span>
                 </div>
               </div>
             </div>
 
-            <div className="col-span-12 md:col-span-3 bg-white p-lg rounded-xl custom-shadow border border-outline-variant/20 flex flex-col justify-between">
-              <span className="text-outline font-label-sm uppercase tracking-tighter">Critical Issues</span>
-              <div className="mt-md">
-                <span className="text-display font-display text-error leading-none">05</span>
-                <p className="text-label-sm text-on-surface-variant mt-xs">Requires immediate action</p>
-              </div>
-            </div>
-
-            <div className="col-span-12 md:col-span-6 bg-tertiary-container text-white p-lg rounded-xl custom-shadow relative overflow-hidden">
-              <div className="relative z-10">
-                <div className="flex justify-between items-start mb-md">
-                  <span className="text-on-tertiary-container font-label-sm uppercase tracking-tighter">Technician Availability</span>
-                  <span className="material-symbols-outlined opacity-50">engineering</span>
-                </div>
-                <div className="flex -space-x-2">
-                  {['https://lh3.googleusercontent.com/aida-public/AB6AXuBKO-N_yQTlwCgJUp5FcelIZ-R5ofQqh4lx1cVmIpkAqFlqc_5DkoI-8AK1uqfA-7wyvJg5tbF-lAI353AxlPr6CyY3YOx-peAwfI-pjpGHtHG6A9jLVPXHi3y6G28JWd4_75DlQ1DSq_nMiAVUnI7WWsMts2ZWXsptswhCThT61hQNrLJQwC8D7Tz4_K0LDOaDNFvfsyOg8oI_kjLWJjboBW-k81wxn4RbJOBwtL2PpvoV98IV8wSMlQ', 'https://lh3.googleusercontent.com/aida-public/AB6AXuDqSjWZGDM42-ngo-wSr43TsZcqLRKe55SaYOXuF9gz465JQsZA7f9lbNLmtNp3Z3R3sQIut63e0sKTJt7qPLxhmpq3ycW1EPHs-XxjbTPZISVn6UYyvQuNiNvtNNet_lE36Rg760YRrB3VbH1GabVN3tMzUAVdvGDyyVMaPqMyHBs2HLqub4-WSLwCHetOkhA6Fdvrpq3xZ9PgKjWSQD-kOsBkwmsSH-RAkCtR7ou8nGi9z8MiE2kOLA', 'https://lh3.googleusercontent.com/aida-public/AB6AXuBNIKV7IOoUxwV3sgsbqeSVSUrV6tflAdXUZKRtqUhmAkmvPvLqLLlGYmb5WM2qa4YYS6O5qCBMx4zXYZkKI3EI7yCb3uyYV0NBDdUhKixNDvH5NlvA7P1wpPrjL3er_s3N5rpBxeQxP5BIEfawVvgUoeg6Zt3cPwFVrL9SD6EmPAhAfbyLQHERDzkD2qtRgIUhWPp7ozhlQFhPbejOCIzAjOeXUE47AGANCoAUoMtY0jG1Gy0waFcm-Q'].map((src, i) => (
-                    <img key={i} className="w-10 h-10 rounded-full border-2 border-tertiary-container" src={src} alt="" />
+            {/* Tickets List */}
+            <div className="bg-white rounded-xl custom-shadow border border-outline-variant/20 overflow-hidden">
+              <div className="px-lg py-md border-b border-outline-variant flex flex-col sm:flex-row justify-between items-center gap-md bg-surface-container-lowest">
+                <div className="flex gap-md overflow-x-auto no-scrollbar w-full sm:w-auto">
+                  {['All Tickets', 'Pending', 'In Progress', 'Resolved'].map((tab) => (
+                    <button 
+                      key={tab} 
+                      onClick={() => setActiveTab(tab)}
+                      className={`pb-base border-b-2 font-label-md whitespace-nowrap ${activeTab === tab ? 'border-primary text-primary' : 'border-transparent text-outline hover:text-on-surface transition-colors'}`}
+                    >
+                      {tab}
+                    </button>
                   ))}
-                  <div className="w-10 h-10 rounded-full border-2 border-tertiary-container bg-surface-container-highest text-primary flex items-center justify-center font-label-md">+4</div>
                 </div>
-                <p className="mt-md text-on-tertiary-container text-label-md">86% of staff currently assigned to active maintenance tasks.</p>
               </div>
-            </div>
-          </div>
 
-          {/* Tickets List */}
-          <div className="bg-white rounded-xl custom-shadow border border-outline-variant/20 overflow-hidden">
-            <div className="px-lg py-md border-b border-outline-variant flex flex-col sm:flex-row justify-between items-center gap-md bg-surface-container-lowest">
-              <div className="flex gap-md overflow-x-auto no-scrollbar w-full sm:w-auto">
-                {['All Tickets', 'Active', 'Scheduled', 'Completed'].map((tab, i) => (
-                  <button key={tab} className={`pb-base border-b-2 font-label-md whitespace-nowrap ${i === 0 ? 'border-primary text-primary' : 'border-transparent text-outline hover:text-on-surface transition-colors'}`}>{tab}</button>
-                ))}
-              </div>
-              <div className="flex items-center gap-sm">
-                <button className="flex items-center gap-xs px-sm py-xs border border-outline-variant rounded-lg text-label-sm hover:bg-surface-container transition-colors">
-                  <span className="material-symbols-outlined text-[18px]">filter_list</span> Filter
-                </button>
-                <button className="flex items-center gap-xs px-sm py-xs border border-outline-variant rounded-lg text-label-sm hover:bg-surface-container transition-colors">
-                  <span className="material-symbols-outlined text-[18px]">sort</span> Priority
-                </button>
-              </div>
-            </div>
-
-            <div className="divide-y divide-outline-variant">
-              {tickets.map((ticket, i) => (
-                <div key={i} className="p-lg hover:bg-surface-container-low transition-colors cursor-pointer group">
-                  <div className="flex flex-col md:flex-row gap-lg md:items-center">
-                    <div className="flex-1">
-                      <div className="flex items-center gap-sm mb-xs">
-                        <span className="text-label-sm text-outline font-mono">{ticket.id}</span>
-                        <span className={`px-sm py-xs rounded ${ticket.priorityColor} text-[10px] font-bold uppercase`}>{ticket.priority}</span>
+              <div className="divide-y divide-outline-variant">
+                {loading ? (
+                  <div className="p-lg text-center text-outline">Loading...</div>
+                ) : requests.filter(r => activeTab === 'All Tickets' || r.status === activeTab).length === 0 ? (
+                  <div className="p-lg text-center text-outline">No maintenance requests found.</div>
+                ) : requests.filter(r => activeTab === 'All Tickets' || r.status === activeTab).map((ticket, i) => (
+                  <div 
+                    key={ticket.id} 
+                    onClick={() => navigate(`/assetflow_maintenance_approval/${ticket.id}`)}
+                    className="p-lg hover:bg-surface-container-low transition-colors cursor-pointer group"
+                  >
+                    <div className="flex flex-col md:flex-row gap-lg md:items-center">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-sm mb-xs">
+                          <span className="text-label-sm text-outline font-mono">REQ-{ticket.id}</span>
+                          <span className={`px-sm py-xs rounded ${getPriorityColor(ticket.priority)} text-[10px] font-bold uppercase`}>{ticket.priority}</span>
+                        </div>
+                        <h3 className="font-headline-md text-body-lg font-semibold text-on-surface group-hover:text-primary transition-colors">{ticket.asset_name || `Asset #${ticket.asset_id}`}</h3>
+                        <p className="text-on-surface-variant text-label-md mt-xs">{ticket.description}</p>
+                        <p className="text-outline text-label-sm mt-xs">Reported on {new Date(ticket.created_at).toLocaleDateString()} by {ticket.requester_name || 'System'}</p>
                       </div>
-                      <h3 className="font-headline-md text-body-lg font-semibold text-on-surface group-hover:text-primary transition-colors">{ticket.title}</h3>
-                      <p className="text-on-surface-variant text-label-md mt-xs">{ticket.reported}</p>
-                    </div>
-                    <div className="flex items-center gap-xl">
-                      <span className={`px-md py-xs rounded-full ${ticket.statusColor} text-label-sm font-medium`}>{ticket.status}</span>
-                      <div className="flex items-center gap-sm min-w-[160px]">
-                        {ticket.assignee ? (
-                          <>
-                            <img className="w-8 h-8 rounded-full border border-outline-variant" src={ticket.assignee.img} alt={ticket.assignee.name} />
+                      <div className="flex items-center gap-xl">
+                        <span className={`px-md py-xs rounded-full ${getStatusColor(ticket.status)} text-label-sm font-medium`}>{ticket.status}</span>
+                        <div className="flex items-center gap-sm min-w-[160px]">
+                          {ticket.technician_name ? (
                             <div className="flex flex-col">
-                              <span className="text-label-sm font-semibold">{ticket.assignee.name}</span>
-                              <span className="text-[10px] text-outline">{ticket.assignee.role}</span>
+                              <span className="text-label-sm font-semibold">{ticket.technician_name}</span>
+                              <span className="text-[10px] text-outline">Assigned Technician</span>
                             </div>
-                          </>
-                        ) : (
-                          <>
-                            <div className="w-8 h-8 rounded-full bg-surface-container flex items-center justify-center text-outline">
-                              <span className="material-symbols-outlined text-[18px]">person_add</span>
-                            </div>
-                            <span className="text-label-sm font-semibold italic text-outline">Unassigned</span>
-                          </>
-                        )}
+                          ) : (
+                            <>
+                              <div className="w-8 h-8 rounded-full bg-surface-container flex items-center justify-center text-outline">
+                                <span className="material-symbols-outlined text-[18px]">person_add</span>
+                              </div>
+                              <span className="text-label-sm font-semibold italic text-outline">Unassigned</span>
+                            </>
+                          )}
+                        </div>
+                        <button className="p-sm text-outline hover:text-primary rounded-full hover:bg-surface-container">
+                          <span className="material-symbols-outlined">chevron_right</span>
+                        </button>
                       </div>
-                      <button className="p-sm text-outline hover:text-primary rounded-full hover:bg-surface-container">
-                        <span className="material-symbols-outlined">more_vert</span>
-                      </button>
                     </div>
                   </div>
-                </div>
-              ))}
-            </div>
-
-            <div className="px-lg py-md border-t border-outline-variant flex justify-between items-center bg-surface-container-low">
-              <p className="text-label-sm text-outline">Showing 4 of 24 active tickets</p>
-              <div className="flex gap-xs">
-                <button className="p-sm border border-outline-variant rounded-lg hover:bg-surface-container disabled:opacity-30" disabled>
-                  <span className="material-symbols-outlined text-[18px]">chevron_left</span>
-                </button>
-                <button className="p-sm border border-outline-variant rounded-lg hover:bg-surface-container">
-                  <span className="material-symbols-outlined text-[18px]">chevron_right</span>
-                </button>
+                ))}
               </div>
             </div>
           </div>
-        </div>
-      </main>
+        </main>
       </div>
 
-      <button className="md:hidden fixed bottom-lg right-lg w-14 h-14 bg-primary text-white rounded-full flex items-center justify-center custom-shadow active:scale-90 transition-transform z-50">
-        <span className="material-symbols-outlined">add</span>
-      </button>
+      {isModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+          <div className="bg-white rounded-xl p-lg w-full max-w-md">
+            <h2 className="text-headline-md font-bold mb-md text-primary">New Maintenance Request</h2>
+            <form onSubmit={handleSubmit} className="space-y-md">
+              <div>
+                <label className="block text-label-md font-bold text-on-surface-variant mb-xs">Asset ID</label>
+                <input 
+                  type="number" 
+                  required
+                  value={newRequest.asset_id}
+                  onChange={(e) => setNewRequest({...newRequest, asset_id: e.target.value})}
+                  className="w-full border border-outline-variant rounded-lg p-sm focus:ring-2 focus:ring-primary outline-none" 
+                  placeholder="Enter numerical Asset ID"
+                />
+              </div>
+              <div>
+                <label className="block text-label-md font-bold text-on-surface-variant mb-xs">Description</label>
+                <textarea 
+                  required
+                  value={newRequest.description}
+                  onChange={(e) => setNewRequest({...newRequest, description: e.target.value})}
+                  className="w-full border border-outline-variant rounded-lg p-sm focus:ring-2 focus:ring-primary outline-none min-h-[100px]" 
+                  placeholder="Describe the issue..."
+                />
+              </div>
+              <div>
+                <label className="block text-label-md font-bold text-on-surface-variant mb-xs">Priority</label>
+                <select 
+                  value={newRequest.priority}
+                  onChange={(e) => setNewRequest({...newRequest, priority: e.target.value})}
+                  className="w-full border border-outline-variant rounded-lg p-sm focus:ring-2 focus:ring-primary outline-none"
+                >
+                  <option value="Low">Low</option>
+                  <option value="Medium">Medium</option>
+                  <option value="High">High</option>
+                  <option value="Critical">Critical</option>
+                </select>
+              </div>
+              <div className="flex justify-end gap-sm mt-lg">
+                <button 
+                  type="button" 
+                  onClick={() => setIsModalOpen(false)}
+                  className="px-md py-sm rounded-lg border border-outline-variant text-on-surface hover:bg-surface-container"
+                >
+                  Cancel
+                </button>
+                <button 
+                  type="submit"
+                  className="px-md py-sm rounded-lg bg-primary text-white font-bold hover:bg-primary/90"
+                >
+                  Submit Request
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
