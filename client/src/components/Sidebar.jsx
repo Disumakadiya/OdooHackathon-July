@@ -24,7 +24,6 @@ const navItems = [
   { label: "Booking", icon: CalendarDays, path: "/assetflow_booking_calendar" },
   { label: "Create Booking", icon: PlusCircle, path: "/assetflow_create_booking" },
   { label: "Maintenance", icon: Hammer, path: "/assetflow_maintenance_requests" },
-  { label: "Maintenance Approval", icon: ClipboardCheck, path: "/assetflow_maintenance_approval" },
   { label: "Discrepancy Report", icon: FileWarning, path: "/assetflow_discrepancy_report" },
 ];
 
